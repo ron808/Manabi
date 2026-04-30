@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import { ReasonBanner } from "@/components/shared/Banner";
+import { PasswordField } from "@/components/shared/PasswordField";
 
 function LoginInner() {
   const router = useRouter();
@@ -70,14 +71,12 @@ function LoginInner() {
             <label className="mb-1.5 block text-xs uppercase tracking-wider text-white/55">
               Password
             </label>
-            <input
-              type="password"
+            <PasswordField
+              value={password}
+              onChange={setPassword}
               autoComplete="current-password"
               required
               minLength={1}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
               placeholder="••••••••"
             />
           </div>

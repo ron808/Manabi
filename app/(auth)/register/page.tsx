@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
+import { PasswordField } from "@/components/shared/PasswordField";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -101,15 +102,13 @@ export default function RegisterPage() {
             <label className="mb-1.5 block text-xs uppercase tracking-wider text-white/55">
               Password
             </label>
-            <input
-              type="password"
+            <PasswordField
+              value={password}
+              onChange={setPassword}
               required
               minLength={8}
               maxLength={200}
               autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
               placeholder="At least 8 characters"
             />
           </div>
