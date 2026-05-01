@@ -28,9 +28,30 @@ export async function connectDB(): Promise<Mongoose> {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    });
+    // Tuned for Vercel serverless + MongoDB Atlas:
+    //  - small pool (each lambda is single-flight)
+    //  - aggressive server selection timeout so cold-starts fail fast instead
+    //    of hanging the whole function
+    //  - keep-alive sockets for warm container reuse
+    //  - zlib compression cuts wire size for question docs (~30–80 KB) by 5–10x
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+        minPoolSize: 0,
+        serverSelectionTimeoutMS: 8000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000,
+        family: 4, // IPv4 — avoids slow IPv6 fallback on some hosts
+        compressors: ["zlib"],
+        zlibCompressionLevel: 6,
+      })
+      .catch((err) => {
+        // Reset on failure so the next request can retry instead of being
+        // stuck on a rejected promise forever.
+        cached.promise = null;
+        throw err;
+      });
   }
 
   cached.conn = await cached.promise;

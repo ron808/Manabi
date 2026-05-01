@@ -3,28 +3,27 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Paper } from "@/lib/db/models/Paper";
 import { applyRateLimit, jsonError, requireAuth } from "@/lib/api/helpers";
 import { clearMistakesSchema } from "@/lib/validation/schemas";
+import mongoose from "mongoose";
 
 export async function GET() {
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
 
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
   if (limited) return limited;
 
-  await connectDB();
-  const papers = await Paper.find({
-    userId: authed.session.userId,
-    status: "completed",
-  })
-    .sort({ completedAt: -1 })
-    .select("_id config completedAt questions")
-    .lean();
-
-  const mistakes = [] as Array<{
-    paperId: string;
+  // Server-side aggregation: unwind the questions array, keep only wrong
+  // answers, project the exact shape we want. Previously we loaded every
+  // completed paper with all questions then filtered in JS — for a user with
+  // 50 papers x 15 questions, that's 750 docs over the wire.
+  const userId = new mongoose.Types.ObjectId(authed.session.userId);
+  const rows = await Paper.aggregate<{
+    paperId: mongoose.Types.ObjectId;
     paperLevel: string;
-    paperFormat: string;
-    completedAt: string | null;
+    completedAt: Date | null;
     question: {
       id: number;
       format: string;
@@ -37,35 +36,49 @@ export async function GET() {
       explanationEn: string;
       englishGloss: string;
     };
-  }>;
+  }>([
+    { $match: { userId, status: "completed" } },
+    { $sort: { completedAt: -1 } },
+    {
+      $project: {
+        _id: 1,
+        completedAt: 1,
+        "config.level": 1,
+        questions: 1,
+      },
+    },
+    { $unwind: "$questions" },
+    { $match: { "questions.isCorrect": false } },
+    {
+      $project: {
+        _id: 0,
+        paperId: "$_id",
+        paperLevel: "$config.level",
+        completedAt: 1,
+        question: {
+          id: "$questions.id",
+          format: "$questions.format",
+          questionJp: "$questions.questionJp",
+          passageJp: "$questions.passageJp",
+          options: "$questions.options",
+          correctAnswer: "$questions.correctAnswer",
+          userAnswer: "$questions.userAnswer",
+          explanationJp: "$questions.explanationJp",
+          explanationEn: "$questions.explanationEn",
+          englishGloss: "$questions.englishGloss",
+        },
+      },
+    },
+  ]);
 
-  for (const paper of papers) {
-    for (const q of paper.questions) {
-      if (q.isCorrect === false) {
-        mistakes.push({
-          paperId: String(paper._id),
-          paperLevel: paper.config.level,
-          paperFormat: q.format,
-          completedAt:
-            paper.completedAt instanceof Date
-              ? paper.completedAt.toISOString()
-              : (paper.completedAt as string | null),
-          question: {
-            id: q.id,
-            format: q.format,
-            questionJp: q.questionJp,
-            passageJp: q.passageJp,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-            userAnswer: q.userAnswer,
-            explanationJp: q.explanationJp,
-            explanationEn: q.explanationEn,
-            englishGloss: q.englishGloss,
-          },
-        });
-      }
-    }
-  }
+  const mistakes = rows.map((r) => ({
+    paperId: String(r.paperId),
+    paperLevel: r.paperLevel,
+    paperFormat: r.question.format,
+    completedAt:
+      r.completedAt instanceof Date ? r.completedAt.toISOString() : r.completedAt,
+    question: r.question,
+  }));
 
   return NextResponse.json({ mistakes, total: mistakes.length });
 }
@@ -73,9 +86,6 @@ export async function GET() {
 export async function DELETE(req: NextRequest) {
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
-
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
-  if (limited) return limited;
 
   let body: unknown;
   try {
@@ -88,7 +98,12 @@ export async function DELETE(req: NextRequest) {
     return jsonError("Confirmation required", 400);
   }
 
-  await connectDB();
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
+  if (limited) return limited;
+
   // We do not destroy paper history. We mark wrong answers as "cleared" by
   // setting isCorrect to null on completed papers' wrong questions.
   const result = await Paper.updateMany(

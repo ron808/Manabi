@@ -7,14 +7,15 @@ export async function GET(req: NextRequest) {
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
 
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
-  if (limited) return limited;
-
   const { searchParams } = new URL(req.url);
   const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? 20)));
   const skip = Math.max(0, Number(searchParams.get("skip") ?? 0));
 
-  await connectDB();
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
+  if (limited) return limited;
   const [papers, total] = await Promise.all([
     Paper.find({ userId: authed.session.userId })
       .sort({ createdAt: -1 })

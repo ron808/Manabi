@@ -7,8 +7,6 @@ import { applyRateLimit, getClientIp, jsonError } from "@/lib/api/helpers";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const limited = await applyRateLimit("register", ip);
-  if (limited) return limited;
 
   let body: unknown;
   try {
@@ -27,13 +25,23 @@ export async function POST(req: NextRequest) {
 
   const { name, email, password } = parsed.data;
 
-  await connectDB();
-  const existing = await User.findOne({ email }).lean();
+  // Run rate limit, DB connect, AND password hashing (~150ms with 12 rounds)
+  // in parallel — they're all independent. Hashing is CPU but the others are
+  // I/O so they overlap.
+  const [limited] = await Promise.all([
+    applyRateLimit("register", ip),
+    connectDB(),
+  ]);
+  if (limited) return limited;
+
+  const [existing, passwordHash] = await Promise.all([
+    User.findOne({ email }).select("_id").lean(),
+    bcrypt.hash(password, 12),
+  ]);
   if (existing) {
     return jsonError("An account with this email already exists", 409);
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
   const created = await User.create({
     name,
     email,

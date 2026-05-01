@@ -11,30 +11,47 @@ export async function GET(
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
 
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
-  if (limited) return limited;
-
   if (!mongoose.Types.ObjectId.isValid(params.paperId)) {
     return jsonError("Invalid paper id", 400);
   }
 
-  await connectDB();
-  const paper = await Paper.findOne({
-    _id: params.paperId,
-    userId: authed.session.userId,
-  }).lean();
+  // Rate limit + connectDB in parallel.
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
+  if (limited) return limited;
+
+  // Single round-trip: atomically flip status from "generated" -> "in_progress"
+  // (and stamp startedAt) using an aggregation pipeline update, returning the
+  // post-update doc. The previous code did findOne + conditional updateOne —
+  // that's 2 sequential Atlas hops on every page load.
+  const paper = await Paper.findOneAndUpdate(
+    { _id: params.paperId, userId: authed.session.userId },
+    [
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $eq: ["$status", "generated"] },
+              "in_progress",
+              "$status",
+            ],
+          },
+          startedAt: {
+            $cond: [
+              { $eq: ["$status", "generated"] },
+              "$$NOW",
+              "$startedAt",
+            ],
+          },
+        },
+      },
+    ],
+    { new: true, lean: true }
+  );
 
   if (!paper) return jsonError("Paper not found", 404);
-
-  // Mark "in_progress" the first time the test is opened.
-  if (paper.status === "generated") {
-    await Paper.updateOne(
-      { _id: paper._id, userId: authed.session.userId },
-      { $set: { status: "in_progress", startedAt: new Date() } }
-    );
-    paper.status = "in_progress";
-    paper.startedAt = new Date();
-  }
 
   return NextResponse.json({
     paper: {

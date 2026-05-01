@@ -7,10 +7,12 @@ export async function GET() {
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
 
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
   if (limited) return limited;
 
-  await connectDB();
   const user = await User.findById(authed.session.userId)
     .select("name email totalPapers totalCorrect totalQuestions createdAt")
     .lean();

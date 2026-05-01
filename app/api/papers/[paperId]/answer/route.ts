@@ -10,13 +10,14 @@ function normalizeMc(s: string): string {
 }
 
 function compareAnswer(
-  question: { options: string[] | null; correctAnswer: string },
+  options: string[] | null | undefined,
+  correctAnswer: string,
   userAnswer: string
 ): boolean {
-  if (question.options && question.options.length > 0) {
-    return normalizeMc(userAnswer) === normalizeMc(question.correctAnswer);
+  if (options && options.length > 0) {
+    return normalizeMc(userAnswer) === normalizeMc(correctAnswer);
   }
-  return userAnswer.trim() === String(question.correctAnswer).trim();
+  return userAnswer.trim() === String(correctAnswer).trim();
 }
 
 export async function PATCH(
@@ -25,9 +26,6 @@ export async function PATCH(
 ) {
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
-
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
-  if (limited) return limited;
 
   if (!mongoose.Types.ObjectId.isValid(params.paperId)) {
     return jsonError("Invalid paper id", 400);
@@ -48,27 +46,55 @@ export async function PATCH(
   }
   const { questionId, userAnswer } = parsed.data;
 
-  await connectDB();
-  const paper = await Paper.findOne({
-    _id: params.paperId,
-    userId: authed.session.userId,
-  });
-  if (!paper) return jsonError("Paper not found", 404);
-  if (paper.status === "completed") {
+  // Run rate limit + DB connect in parallel — they're independent network
+  // calls (Upstash + Atlas) and waiting them sequentially adds 50–200ms.
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
+  if (limited) return limited;
+
+  // Fetch ONLY the matching question (positional projection) — not the whole
+  // paper. Saves loading 10–20 question objects (each with passage + AI text)
+  // just to grade one click.
+  const lite = await Paper.findOne(
+    {
+      _id: params.paperId,
+      userId: authed.session.userId,
+      "questions.id": questionId,
+    },
+    { "questions.$": 1, status: 1, startedAt: 1 }
+  ).lean();
+
+  if (!lite) return jsonError("Paper or question not found", 404);
+  if (lite.status === "completed") {
     return jsonError("Paper already completed", 409);
   }
 
-  const q = paper.questions.find((q) => q.id === questionId);
+  const q = lite.questions?.[0];
   if (!q) return jsonError("Question not found", 404);
 
-  const isCorrect = compareAnswer(q, userAnswer);
-  q.userAnswer = userAnswer;
-  q.isCorrect = isCorrect;
-  q.answeredAt = new Date();
-  paper.status = "in_progress";
-  if (!paper.startedAt) paper.startedAt = new Date();
+  const isCorrect = compareAnswer(q.options, q.correctAnswer, userAnswer);
+  const now = new Date();
 
-  await paper.save();
+  const set: Record<string, unknown> = {
+    "questions.$.userAnswer": userAnswer,
+    "questions.$.isCorrect": isCorrect,
+    "questions.$.answeredAt": now,
+    status: "in_progress",
+  };
+  if (!lite.startedAt) set.startedAt = now;
+
+  // Targeted positional update — writes ~80 bytes instead of rewriting the
+  // entire document.
+  await Paper.updateOne(
+    {
+      _id: params.paperId,
+      userId: authed.session.userId,
+      "questions.id": questionId,
+    },
+    { $set: set }
+  );
 
   return NextResponse.json({
     isCorrect,

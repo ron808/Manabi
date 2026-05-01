@@ -13,9 +13,6 @@ export async function PATCH(
   const authed = await requireAuth();
   if (!authed.ok) return authed.response;
 
-  const limited = await applyRateLimit("api", `user:${authed.session.userId}`);
-  if (limited) return limited;
-
   if (!mongoose.Types.ObjectId.isValid(params.paperId)) {
     return jsonError("Invalid paper id", 400);
   }
@@ -35,41 +32,60 @@ export async function PATCH(
   }
   const { timeTakenSeconds } = parsed.data;
 
-  await connectDB();
-  const paper = await Paper.findOne({
-    _id: params.paperId,
-    userId: authed.session.userId,
-  });
-  if (!paper) return jsonError("Paper not found", 404);
+  const [limited] = await Promise.all([
+    applyRateLimit("api", `user:${authed.session.userId}`),
+    connectDB(),
+  ]);
+  if (limited) return limited;
 
-  if (paper.status === "completed") {
+  // Read just the answer flags — not full questions, passages, explanations.
+  const lite = await Paper.findOne(
+    { _id: params.paperId, userId: authed.session.userId },
+    {
+      status: 1,
+      totalQuestions: 1,
+      "questions.isCorrect": 1,
+      "questions.userAnswer": 1,
+    }
+  ).lean();
+
+  if (!lite) return jsonError("Paper not found", 404);
+  if (lite.status === "completed") {
     return NextResponse.json({ ok: true, alreadyCompleted: true });
   }
 
-  const score = paper.questions.filter((q) => q.isCorrect === true).length;
-  const answered = paper.questions.filter((q) => q.userAnswer != null).length;
+  const score = lite.questions.filter((q) => q.isCorrect === true).length;
+  const answered = lite.questions.filter((q) => q.userAnswer != null).length;
 
-  paper.status = "completed";
-  paper.completedAt = new Date();
-  paper.timeTakenSeconds = timeTakenSeconds;
-  paper.score = score;
-  await paper.save();
-
-  await User.updateOne(
-    { _id: authed.session.userId },
-    {
-      $inc: {
-        totalPapers: 1,
-        totalCorrect: score,
-        totalQuestions: answered,
-      },
-    }
-  );
+  // Run the two writes in parallel — they touch different collections.
+  await Promise.all([
+    Paper.updateOne(
+      { _id: params.paperId, userId: authed.session.userId, status: { $ne: "completed" } },
+      {
+        $set: {
+          status: "completed",
+          completedAt: new Date(),
+          timeTakenSeconds,
+          score,
+        },
+      }
+    ),
+    User.updateOne(
+      { _id: authed.session.userId },
+      {
+        $inc: {
+          totalPapers: 1,
+          totalCorrect: score,
+          totalQuestions: answered,
+        },
+      }
+    ),
+  ]);
 
   return NextResponse.json({
     ok: true,
     score,
-    totalQuestions: paper.totalQuestions,
+    totalQuestions: lite.totalQuestions,
     answered,
   });
 }

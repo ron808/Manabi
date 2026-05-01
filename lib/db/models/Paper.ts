@@ -85,6 +85,9 @@ const PaperSchema = new Schema<PaperDoc>({
 
 PaperSchema.index({ userId: 1, status: 1 });
 PaperSchema.index({ userId: 1, createdAt: -1 });
+// Used by /api/mistakes (status:"completed" + sort by completedAt desc) and
+// the history/results dashboards. Covers the match + sort in one index.
+PaperSchema.index({ userId: 1, status: 1, completedAt: -1 });
 
 export const Paper: Model<PaperDoc> =
   (models.Paper as Model<PaperDoc>) ||
