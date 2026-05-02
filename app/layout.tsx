@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_JP, Bricolage_Grotesque } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth/authOptions";
@@ -22,6 +22,16 @@ const bricolage = Bricolage_Grotesque({
   variable: "--font-display",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#0B0F1A",
+  // viewport-fit=cover lets us read env(safe-area-inset-*) for iPhone notch / home indicator
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
+  // Allow zoom (don't trap pinch-zoom — accessibility) but don't auto-zoom on input focus
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: "Manabi — Master Japanese with AI-generated JLPT papers",

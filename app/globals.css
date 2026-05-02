@@ -15,6 +15,26 @@ body {
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent rubber-band scroll bleed on iOS when sheets/modals open */
+  overscroll-behavior-y: none;
+  /* Allow vertical scroll but disable double-tap zoom and that 300ms tap delay */
+  touch-action: manipulation;
+}
+
+/* Prevent any horizontal overflow from leaking on narrow phones */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Kill tap highlight + tap delay on every interactive element */
+button,
+a,
+[role="button"],
+[role="radio"],
+[role="tab"],
+input[type="submit"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 h1, h2, h3, h4 {
@@ -82,7 +102,9 @@ h1, h2, h3, h4 {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 0.75rem;
-  padding: 0.65rem 1.1rem;
+  /* min-height: 44px hits the iOS HIG / WCAG 2.5.5 target size */
+  padding: 0.7rem 1.1rem;
+  min-height: 44px;
   font-weight: 500;
   font-size: 0.95rem;
   line-height: 1;
@@ -129,10 +151,17 @@ h1, h2, h3, h4 {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   color: #E6E8F0;
-  font-size: 0.95rem;
+  /* CRITICAL: 16px on mobile prevents iOS Safari from auto-zooming on focus */
+  font-size: 16px;
+  min-height: 48px;
   transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+@media (min-width: 640px) {
+  .input {
+    font-size: 0.95rem;
+  }
 }
 .input::placeholder {
   color: rgba(230, 232, 240, 0.4);
@@ -149,7 +178,8 @@ h1, h2, h3, h4 {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 0.95rem;
+  padding: 0.65rem 1rem;
+  min-height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
@@ -210,6 +240,12 @@ h1, h2, h3, h4 {
 .jp {
   font-family: var(--font-jp), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "palt" 1;
+  /* On narrow phones, Japanese passages with long unbroken runs of kanji can
+     overflow horizontally. word-break: break-word lets them wrap at any point
+     while still respecting CJK line-breaking rules. */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-break: strict;
 }
 
 /* Subtle gradient text */
@@ -223,5 +259,37 @@ h1, h2, h3, h4 {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Safe-area utilities for iPhones with home indicator / notch */
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  .pl-safe {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+  .pr-safe {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+  /* Add safe-area to existing padding (compose with px-4 etc.) */
+  .pb-safe-or-3 {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+  .pb-safe-or-4 {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  /* Visually-hidden but tappable area extender — helps small icons hit 44px target */
+  .tap-44 {
+    position: relative;
+  }
+  .tap-44::after {
+    content: "";
+    position: absolute;
+    inset: 50% 50% 50% 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
   }
 }

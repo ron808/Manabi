@@ -86,7 +86,7 @@ export default function MistakesPage() {
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand-400">
               Mistake log
             </p>
-            <h1 className="mt-1 font-display text-4xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
+            <h1 className="mt-1 break-words font-display text-3xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
               What you <span className="text-gradient">missed</span>.
             </h1>
           </div>
@@ -186,7 +186,7 @@ export default function MistakesPage() {
                   <motion.li
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                    className="card rounded-2xl p-5"
+                    className="card rounded-2xl p-4 sm:p-5"
                   >
                     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
                       <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-2.5 py-0.5 text-brand-400">

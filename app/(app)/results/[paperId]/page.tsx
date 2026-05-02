@@ -85,11 +85,11 @@ export default function ResultsPage() {
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand-400">
               Results
             </p>
-            <h1 className="mt-1 font-display text-4xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
+            <h1 className="mt-1 break-words font-display text-3xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
               お疲れさま — <span className="text-gradient">well done.</span>
             </h1>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Link href="/dashboard" className="btn btn-ghost">
               Dashboard
             </Link>
@@ -102,7 +102,7 @@ export default function ResultsPage() {
               type="button"
               disabled={regenerating}
               onClick={regenerateSimilar}
-              className="btn btn-primary"
+              className="btn btn-primary col-span-2 sm:col-span-1"
             >
               {regenerating ? "Generating…" : "Regenerate similar →"}
             </motion.button>

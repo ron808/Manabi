@@ -67,13 +67,13 @@ export default function ConfigurePage() {
   return (
     <>
       <GenerationLoader open={submitting} questionCount={questionCount} />
-      <MotionPage className="space-y-8 pb-32 sm:space-y-10">
+      <MotionPage className="space-y-6 pb-40 sm:space-y-10 sm:pb-32">
       <MotionItem>
         <header>
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand-400">
             Step 01 — Configure
           </p>
-          <h1 className="mt-1 font-display text-4xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
+          <h1 className="mt-1 break-words font-display text-3xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
             Design your <span className="text-gradient">paper</span>
           </h1>
           <p className="mt-2 max-w-md text-[15px] leading-relaxed text-white/60">
@@ -137,15 +137,15 @@ export default function ConfigurePage() {
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-white/8 bg-ink-900/85 backdrop-blur-md"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-white/8 bg-ink-900/90 pb-safe backdrop-blur-md"
       >
         <div className="mx-auto flex max-w-6xl flex-col items-stretch gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5">
-          <div className="min-w-0">
+          <div className="min-w-0 order-2 sm:order-1">
             {error ? (
               <p className="truncate text-sm text-sakura-300">{error}</p>
             ) : (
-              <p className="truncate text-xs text-white/55">
-                {level} · diff {difficulty} · {questionCount} questions ·{" "}
+              <p className="truncate text-[11px] text-white/55 sm:text-xs">
+                {level} · diff {difficulty} · {questionCount} Qs ·{" "}
                 {timeLimit ? `${timeLimit} min` : "untimed"} · {formats.length} formats
               </p>
             )}
@@ -155,7 +155,7 @@ export default function ConfigurePage() {
             whileHover={{ y: -1 }}
             onClick={generate}
             disabled={!canSubmit}
-            className="btn btn-primary w-full sm:w-auto"
+            className="btn btn-primary order-1 w-full sm:order-2 sm:w-auto"
           >
             {submitting ? (
               <>
@@ -183,7 +183,7 @@ function Section({
 }) {
   return (
     <MotionItem>
-      <section className="card rounded-2xl p-5 sm:p-7">
+      <section className="card rounded-2xl p-4 sm:p-7">
         <div className="mb-4">
           <h2 className="font-display text-2xl tracking-tightish sm:text-3xl">
             {title}

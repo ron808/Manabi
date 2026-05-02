@@ -8,7 +8,9 @@ export default function AppLayout({
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="mx-auto max-w-6xl px-5 py-8 sm:py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-safe sm:px-5 sm:py-10">
+        {children}
+      </main>
     </div>
   );
 }

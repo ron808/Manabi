@@ -60,7 +60,7 @@ export default function LandingPage() {
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
                 Now powered by Llama-3.3 70B on Groq
               </p>
-              <h1 className="font-display text-5xl leading-[1.02] tracking-tighter2 text-balance sm:text-6xl md:text-7xl">
+              <h1 className="font-display text-[2.5rem] leading-[1.05] tracking-tighter2 text-balance sm:text-6xl md:text-7xl">
                 Master Japanese,
                 <br />
                 <span className="text-gradient">paper by paper.</span>
@@ -74,7 +74,7 @@ export default function LandingPage() {
                 choose what you want to drill, and sit a focused exam — built for the
                 way you actually study.
               </p>
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
                 <Link href="/register" className="btn btn-primary text-base">
                   Start studying free →
                 </Link>

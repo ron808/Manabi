@@ -167,7 +167,7 @@ export default function TestPage() {
   const isLast = current === total - 1;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[260px,1fr]">
       {/* Sidebar (desktop) */}
       <aside className="hidden lg:block">
         <div className="sticky top-24 space-y-4">
@@ -194,25 +194,23 @@ export default function TestPage() {
       {/* Main */}
       <div className="space-y-4">
         {/* Top bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-sm text-white/70">
-              {paper.config.level} · diff {paper.config.difficulty}/5 · {total} questions
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] text-white/70 sm:text-sm">
+              {paper.config.level} · diff {paper.config.difficulty}/5 · {total} Qs
             </div>
-            <div className="text-xs text-white/40">
-              {paper.config.formats.slice(0, 4).join(" · ")}
-              {paper.config.formats.length > 4 ? " · …" : ""}
+            <div className="truncate text-[11px] text-white/40 sm:text-xs">
+              {paper.config.formats.slice(0, 3).join(" · ")}
+              {paper.config.formats.length > 3 ? " · …" : ""}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {timed && totalSeconds > 0 && (
-              <Timer
-                totalSeconds={totalSeconds}
-                onExpire={complete}
-                paused={false}
-              />
-            )}
-          </div>
+          {timed && totalSeconds > 0 && (
+            <Timer
+              totalSeconds={totalSeconds}
+              onExpire={complete}
+              paused={false}
+            />
+          )}
         </div>
 
         {/* Progress */}
@@ -225,11 +223,14 @@ export default function TestPage() {
 
         {/* Mobile navigator */}
         <div className="lg:hidden">
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          <div
+            className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1.5"
+            style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+          >
             {paper.questions.map((qq, i) => {
               const s = navStatuses[i];
               let cls =
-                "h-9 w-9 shrink-0 rounded-lg text-xs font-medium ";
+                "h-11 w-11 shrink-0 rounded-lg text-sm font-medium transition-colors ";
               if (s === "correct")
                 cls += "bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-500/40";
               else if (s === "incorrect")
@@ -243,6 +244,7 @@ export default function TestPage() {
                   onClick={() => setCurrent(i)}
                   className={cls}
                   aria-label={`Jump to question ${i + 1}`}
+                  aria-current={i === current ? "true" : undefined}
                 >
                   {i + 1}
                 </button>
@@ -272,14 +274,17 @@ export default function TestPage() {
         </AnimatePresence>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex items-center justify-between gap-2 pt-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setCurrent((c) => Math.max(0, c - 1))}
             disabled={current === 0}
-            className="btn btn-ghost"
+            className="btn btn-ghost flex-1 px-3 sm:flex-none sm:px-4"
+            aria-label="Previous question"
           >
-            ← Previous
+            <span aria-hidden>←</span>
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </button>
           <div className="flex items-center gap-2">
             {!timed && !locked && (
@@ -289,7 +294,7 @@ export default function TestPage() {
                   if (isLast) complete();
                   else setCurrent((c) => Math.min(total - 1, c + 1));
                 }}
-                className="btn btn-ghost text-xs"
+                className="btn btn-ghost !min-h-[44px] px-3 text-xs"
               >
                 Skip
               </button>
@@ -299,18 +304,20 @@ export default function TestPage() {
                 type="button"
                 onClick={complete}
                 disabled={!locked}
-                className="btn btn-primary"
+                className="btn btn-primary flex-1 sm:flex-none"
               >
-                Finish test →
+                <span className="hidden sm:inline">Finish test</span>
+                <span className="sm:hidden">Finish</span>
+                <span aria-hidden>→</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setCurrent((c) => Math.min(total - 1, c + 1))}
                 disabled={!locked}
-                className="btn btn-primary"
+                className="btn btn-primary flex-1 sm:flex-none"
               >
-                Next →
+                Next <span aria-hidden>→</span>
               </button>
             )}
           </div>

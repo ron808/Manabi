@@ -25,7 +25,7 @@ export function QuestionCard({
   }, [question.id]);
 
   return (
-    <article className="card animate-fade-up rounded-2xl p-6 sm:p-8">
+    <article className="card animate-fade-up rounded-2xl p-4 sm:p-8">
       <header className="mb-5 flex flex-wrap items-center gap-3">
         <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-medium text-brand-400">
           {question.format}
@@ -41,10 +41,10 @@ export function QuestionCard({
 
       {question.passageJp && (
         <div
-          className="mt-5 rounded-xl border border-white/8 bg-white/[0.03] p-4"
+          className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] p-3 sm:mt-5 sm:p-4"
           lang="ja"
         >
-          <p className="jp text-base leading-relaxed text-white/85 sm:text-lg">
+          <p className="jp text-[15px] leading-relaxed text-white/85 sm:text-lg">
             {question.passageJp}
           </p>
         </div>

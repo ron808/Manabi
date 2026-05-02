@@ -53,7 +53,7 @@ export function AnswerOptions({
           const isCorrect = correctAnswer?.toUpperCase() === letter;
 
           let cls =
-            "group relative flex items-center gap-3 rounded-xl border p-4 text-left transition-colors duration-200";
+            "group relative flex min-h-[60px] items-center gap-3 rounded-xl border p-3.5 text-left transition-colors duration-200 sm:p-4";
           if (!locked) {
             cls += " border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]";
           } else if (pending) {
@@ -96,7 +96,7 @@ export function AnswerOptions({
               >
                 {letter}
               </span>
-              <span className="jp text-base sm:text-lg" lang="ja">
+              <span className="jp min-w-0 flex-1 text-[15px] leading-snug sm:text-lg" lang="ja">
                 {optText}
               </span>
               {pending && isUser && <PendingDot />}

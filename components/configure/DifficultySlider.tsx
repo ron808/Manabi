@@ -47,7 +47,7 @@ export function DifficultySlider({
   return (
     <div className="select-none">
       {/* Header: number + active label */}
-      <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="flex items-baseline gap-3">
           <AnimatePresence mode="popLayout">
             <motion.span
@@ -56,7 +56,7 @@ export function DifficultySlider({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.85 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="font-display text-6xl font-semibold leading-none text-white sm:text-7xl"
+              className="font-display text-5xl font-semibold leading-none text-white sm:text-7xl"
             >
               {value}
             </motion.span>
@@ -64,8 +64,22 @@ export function DifficultySlider({
           <span className="text-base font-medium text-white/35 sm:text-lg">
             / 5
           </span>
+          <span className="ml-auto sm:hidden">
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={`label-${active.v}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22 }}
+                className="font-display text-lg font-semibold text-white"
+              >
+                {active.label}
+              </motion.span>
+            </AnimatePresence>
+          </span>
         </div>
-        <div className="min-h-[2.75rem] flex-1 text-right">
+        <div className="min-h-[2.5rem] sm:min-h-[2.75rem] sm:flex-1 sm:text-right">
           <AnimatePresence mode="popLayout">
             <motion.div
               key={active.v}
@@ -74,10 +88,10 @@ export function DifficultySlider({
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.22 }}
             >
-              <div className="font-display text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              <div className="hidden font-display text-xl font-semibold tracking-tight text-white sm:block sm:text-2xl">
                 {active.label}
               </div>
-              <p className="mt-0.5 text-xs text-white/55 sm:text-sm">
+              <p className="text-xs leading-snug text-white/55 sm:mt-0.5 sm:text-sm">
                 {active.desc}
               </p>
             </motion.div>
@@ -101,7 +115,7 @@ export function DifficultySlider({
               aria-checked={isActive}
               aria-label={s.label}
               onClick={() => onChange(s.v)}
-              className="relative isolate flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 transition-colors sm:gap-1.5 sm:py-3.5"
+              className="relative isolate flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 transition-colors sm:gap-1.5 sm:px-2 sm:py-3.5"
             >
               {isActive && (
                 <motion.span
@@ -125,7 +139,7 @@ export function DifficultySlider({
                 {s.short}
               </span>
               <span
-                className={`text-[10px] font-medium uppercase tracking-wider transition-colors sm:text-[11px] ${
+                className={`truncate text-[9px] font-medium uppercase tracking-wider transition-colors sm:text-[11px] ${
                   isActive ? "text-white/90" : "text-white/45"
                 }`}
               >

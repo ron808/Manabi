@@ -10,21 +10,21 @@ export function AnswerReview({ questions }: { questions: Question[] }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display text-xl font-semibold">Answer review</h2>
-        <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1 text-xs">
+        <div className="inline-flex w-full rounded-full border border-white/10 bg-white/[0.03] p-1 text-xs sm:w-auto">
           {(["all", "wrong"] as const).map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => setFilter(k)}
-              className={`rounded-full px-3 py-1.5 transition-colors ${
+              className={`flex-1 rounded-full px-4 py-2 transition-colors sm:flex-none ${
                 filter === k
                   ? "bg-white/10 text-white"
                   : "text-white/55 hover:text-white"
               }`}
             >
-              {k === "all" ? "All questions" : "Wrong only"}
+              {k === "all" ? "All" : "Wrong only"}
             </button>
           ))}
         </div>
@@ -39,7 +39,7 @@ export function AnswerReview({ questions }: { questions: Question[] }) {
       ) : (
         <ul className="space-y-3">
           {list.map((q, idx) => (
-            <li key={q.id} className="card animate-fade-up rounded-2xl p-5">
+            <li key={q.id} className="card animate-fade-up rounded-2xl p-4 sm:p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-white/70">
                   Q{q.id}

@@ -38,41 +38,41 @@ export function RecentPapers({ papers }: { papers: PaperSummary[] }) {
           <li key={p._id}>
             <Link
               href={href}
-              className="card card-hover flex items-center justify-between gap-4 rounded-2xl px-4 py-4 sm:px-5"
+              className="card card-hover flex items-center justify-between gap-3 rounded-2xl px-3.5 py-3.5 sm:gap-4 sm:px-5 sm:py-4"
             >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 text-xs text-white/55">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/55 sm:text-xs">
                   <span>{relativeTime(p.createdAt)}</span>
-                  <span>•</span>
-                  <span>{p.config.questionCount} questions</span>
+                  <span aria-hidden>•</span>
+                  <span>{p.config.questionCount} Qs</span>
                   {p.timeTakenSeconds != null && (
                     <>
-                      <span>•</span>
+                      <span aria-hidden>•</span>
                       <span className="font-mono">
                         {formatMMSS(p.timeTakenSeconds)}
                       </span>
                     </>
                   )}
                 </div>
-                <div className="mt-1 truncate text-base font-medium text-white">
+                <div className="mt-0.5 truncate text-[15px] font-medium text-white sm:text-base">
                   {p.config.level} ·{" "}
                   <span className="text-white/65">
-                    {p.config.formats.slice(0, 3).join(", ")}
-                    {p.config.formats.length > 3 ? "…" : ""}
+                    {p.config.formats.slice(0, 2).join(", ")}
+                    {p.config.formats.length > 2 ? "…" : ""}
                   </span>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 {!isCompleted ? (
-                  <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs text-brand-400">
+                  <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-2.5 py-1 text-[11px] text-brand-400 sm:px-3 sm:text-xs">
                     {p.status === "in_progress" ? "Resume" : "Start"}
                   </span>
                 ) : (
                   <div className="text-right">
-                    <div className="font-display text-xl font-semibold text-white">
+                    <div className="font-display text-lg font-semibold leading-tight text-white sm:text-xl">
                       {pct ?? "—"}%
                     </div>
-                    <div className="text-[11px] text-white/45">
+                    <div className="text-[10px] text-white/45 sm:text-[11px]">
                       {p.score}/{p.totalQuestions}
                     </div>
                   </div>

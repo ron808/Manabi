@@ -99,7 +99,7 @@ export function GenerationLoader({
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full max-w-md"
           >
-            <div className="card rounded-3xl px-7 py-9 text-center shadow-soft sm:px-9 sm:py-11">
+            <div className="card rounded-3xl px-5 py-7 text-center shadow-soft sm:px-9 sm:py-11">
               <div className="mx-auto flex h-28 w-28 items-center justify-center">
                 <Shuriken />
               </div>

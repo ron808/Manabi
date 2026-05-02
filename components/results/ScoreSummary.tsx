@@ -31,9 +31,9 @@ export function ScoreSummary({ paper }: { paper: PaperFull }) {
   const offset = c * (1 - pct / 100);
 
   return (
-    <section className="card grid gap-6 rounded-2xl p-6 sm:p-8 md:grid-cols-[auto,1fr]">
-      <div className="relative grid h-40 w-40 place-items-center">
-        <svg width={160} height={160} className="-rotate-90">
+    <section className="card grid gap-5 rounded-2xl p-4 sm:gap-6 sm:p-8 md:grid-cols-[auto,1fr]">
+      <div className="relative mx-auto grid h-36 w-36 place-items-center sm:h-40 sm:w-40 md:mx-0">
+        <svg viewBox="0 0 160 160" className="-rotate-90 h-full w-full">
           <circle
             cx={80}
             cy={80}
@@ -98,21 +98,25 @@ export function ScoreSummary({ paper }: { paper: PaperFull }) {
           <div className="mb-2 text-xs uppercase tracking-wider text-white/45">
             Accuracy by format
           </div>
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             {Array.from(buckets.entries()).map(([k, v]) => {
               const p = v.total > 0 ? (v.correct / v.total) * 100 : 0;
               return (
-                <div key={k} className="flex items-center gap-3">
-                  <span className="w-44 truncate text-sm text-white/70">{k}</span>
-                  <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/5">
+                <div key={k} className="space-y-1">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 flex-1 truncate text-white/70">
+                      {k}
+                    </span>
+                    <span className="shrink-0 text-white/55">
+                      {v.correct}/{v.total}
+                    </span>
+                  </div>
+                  <div className="relative h-2 overflow-hidden rounded-full bg-white/5">
                     <div
-                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-brand-400 to-sakura-400"
+                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-brand-400 to-sakura-400 transition-[width] duration-700"
                       style={{ width: `${p}%` }}
                     />
                   </div>
-                  <span className="w-12 text-right text-sm text-white/60">
-                    {v.correct}/{v.total}
-                  </span>
                 </div>
               );
             })}
