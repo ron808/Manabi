@@ -48,7 +48,7 @@ export async function GET(
         },
       },
     ],
-    { new: true, lean: true }
+    { new: true, lean: true, updatePipeline: true }
   );
 
   if (!paper) return jsonError("Paper not found", 404);
