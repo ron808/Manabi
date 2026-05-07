@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/shared/Logo";
+import { ThemeSwitcher } from "@/components/shared/ThemeSwitcher";
 import {
   MotionPage,
   MotionItem,
@@ -42,6 +43,7 @@ export default function LandingPage() {
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-5">
         <Logo size="md" href="/" />
         <nav className="flex items-center gap-2 text-sm">
+          <ThemeSwitcher />
           <Link href="/login" className="btn btn-ghost">
             Log in
           </Link>
@@ -56,10 +58,6 @@ export default function LandingPage() {
         <MotionPage>
           <section className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.2fr,1fr] lg:items-center lg:gap-12 lg:py-20">
             <MotionItem>
-              <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/65">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
-                Now powered by Llama-3.3 70B on Groq
-              </p>
               <h1 className="font-display text-[2.5rem] leading-[1.05] tracking-tighter2 text-balance sm:text-6xl md:text-7xl">
                 Master Japanese,
                 <br />

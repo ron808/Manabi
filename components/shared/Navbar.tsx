@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Logo } from "./Logo";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", short: "Home" },
@@ -45,6 +46,7 @@ export function Navbar() {
               {session.user.name}
             </span>
           )}
+          <ThemeSwitcher />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             aria-label="Sign out"

@@ -2,28 +2,203 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ─── Theme tokens ──────────────────────────────────────────────────────── */
+/* Each theme defines the same set of variables. Switching the data-theme
+   attribute on <html> swaps the entire palette. Default is "manabi". */
+
+:root,
+[data-theme="manabi"] {
   color-scheme: dark;
+  --c-bg: #0B0F1A;
+  --c-text: #E6E8F0;
+  --c-text-strong: #FFFFFF;
+
+  /* Aurora background */
+  --c-aurora-base: #0B0F1A;
+  --c-aurora-1: rgba(79, 70, 229, 0.25);
+  --c-aurora-2: rgba(240, 70, 127, 0.15);
+  --c-aurora-3: rgba(124, 123, 255, 0.18);
+
+  /* Headline gradient */
+  --c-grad-1: #C7C9FF;
+  --c-grad-2: #FF9DBE;
+  --c-grad-3: #F5C97B;
+
+  /* Primary button */
+  --c-btn-1: #5b53ee;
+  --c-btn-2: #4338ca;
+  --c-btn-ring: rgba(124, 123, 255, 0.4);
+  --c-btn-shadow: rgba(79, 70, 229, 0.55);
+
+  /* Pill / outline accents */
+  --c-accent: rgba(124, 123, 255, 0.6);
+  --c-accent-soft: rgba(124, 123, 255, 0.35);
+  --c-accent-tint: rgba(124, 123, 255, 0.1);
+  --c-accent-text: #C7C9FF;
+  --c-pill-grad-1: rgba(91, 83, 238, 0.25);
+  --c-pill-grad-2: rgba(67, 56, 202, 0.25);
+
+  /* Selection / focus */
+  --c-selection: rgba(124, 123, 255, 0.35);
+  --c-focus: rgba(124, 123, 255, 0.6);
 }
+
+[data-theme="sumi"] {
+  color-scheme: dark;
+  --c-bg: #050505;
+  --c-text: #F2F2F2;
+  --c-text-strong: #FFFFFF;
+
+  --c-aurora-base: #050505;
+  --c-aurora-1: rgba(255, 255, 255, 0.05);
+  --c-aurora-2: rgba(255, 255, 255, 0.03);
+  --c-aurora-3: rgba(180, 180, 180, 0.04);
+
+  --c-grad-1: #FFFFFF;
+  --c-grad-2: #BFBFBF;
+  --c-grad-3: #888888;
+
+  --c-btn-1: #FFFFFF;
+  --c-btn-2: #BFBFBF;
+  --c-btn-ring: rgba(255, 255, 255, 0.4);
+  --c-btn-shadow: rgba(255, 255, 255, 0.18);
+
+  --c-accent: rgba(255, 255, 255, 0.7);
+  --c-accent-soft: rgba(255, 255, 255, 0.35);
+  --c-accent-tint: rgba(255, 255, 255, 0.08);
+  --c-accent-text: #F2F2F2;
+  --c-pill-grad-1: rgba(255, 255, 255, 0.18);
+  --c-pill-grad-2: rgba(255, 255, 255, 0.08);
+
+  --c-selection: rgba(255, 255, 255, 0.2);
+  --c-focus: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="matcha"] {
+  color-scheme: dark;
+  --c-bg: #0E1A14;
+  --c-text: #E2EAE2;
+  --c-text-strong: #FFFFFF;
+
+  --c-aurora-base: #0E1A14;
+  --c-aurora-1: rgba(85, 167, 91, 0.28);
+  --c-aurora-2: rgba(245, 201, 123, 0.18);
+  --c-aurora-3: rgba(38, 102, 70, 0.22);
+
+  --c-grad-1: #B8E5BC;
+  --c-grad-2: #F5C97B;
+  --c-grad-3: #FFB382;
+
+  --c-btn-1: #4FA15A;
+  --c-btn-2: #2F6B3D;
+  --c-btn-ring: rgba(184, 229, 188, 0.4);
+  --c-btn-shadow: rgba(79, 161, 90, 0.55);
+
+  --c-accent: rgba(184, 229, 188, 0.6);
+  --c-accent-soft: rgba(184, 229, 188, 0.35);
+  --c-accent-tint: rgba(184, 229, 188, 0.1);
+  --c-accent-text: #B8E5BC;
+  --c-pill-grad-1: rgba(79, 161, 90, 0.28);
+  --c-pill-grad-2: rgba(47, 107, 61, 0.28);
+
+  --c-selection: rgba(184, 229, 188, 0.35);
+  --c-focus: rgba(184, 229, 188, 0.6);
+}
+
+[data-theme="yozora"] {
+  color-scheme: dark;
+  --c-bg: #050813;
+  --c-text: #E2F0FF;
+  --c-text-strong: #FFFFFF;
+
+  --c-aurora-base: #050813;
+  --c-aurora-1: rgba(34, 102, 235, 0.3);
+  --c-aurora-2: rgba(118, 200, 255, 0.18);
+  --c-aurora-3: rgba(191, 168, 255, 0.18);
+
+  --c-grad-1: #BCE4FF;
+  --c-grad-2: #6BB5FF;
+  --c-grad-3: #BFA8FF;
+
+  --c-btn-1: #2266EB;
+  --c-btn-2: #1A4FBC;
+  --c-btn-ring: rgba(118, 200, 255, 0.4);
+  --c-btn-shadow: rgba(34, 102, 235, 0.55);
+
+  --c-accent: rgba(118, 200, 255, 0.6);
+  --c-accent-soft: rgba(118, 200, 255, 0.35);
+  --c-accent-tint: rgba(118, 200, 255, 0.1);
+  --c-accent-text: #BCE4FF;
+  --c-pill-grad-1: rgba(34, 102, 235, 0.28);
+  --c-pill-grad-2: rgba(26, 79, 188, 0.28);
+
+  --c-selection: rgba(118, 200, 255, 0.35);
+  --c-focus: rgba(118, 200, 255, 0.6);
+}
+
+[data-theme="sunset"] {
+  color-scheme: dark;
+  --c-bg: #1A0B0F;
+  --c-text: #FFF0E8;
+  --c-text-strong: #FFFFFF;
+
+  --c-aurora-base: #1A0B0F;
+  --c-aurora-1: rgba(255, 122, 65, 0.3);
+  --c-aurora-2: rgba(245, 73, 113, 0.22);
+  --c-aurora-3: rgba(245, 201, 123, 0.18);
+
+  --c-grad-1: #FFC59E;
+  --c-grad-2: #FF7AA8;
+  --c-grad-3: #F5C97B;
+
+  --c-btn-1: #FF7A41;
+  --c-btn-2: #D04F1F;
+  --c-btn-ring: rgba(255, 197, 158, 0.4);
+  --c-btn-shadow: rgba(255, 122, 65, 0.55);
+
+  --c-accent: rgba(255, 197, 158, 0.7);
+  --c-accent-soft: rgba(255, 122, 65, 0.45);
+  --c-accent-tint: rgba(255, 122, 65, 0.12);
+  --c-accent-text: #FFC59E;
+  --c-pill-grad-1: rgba(255, 122, 65, 0.3);
+  --c-pill-grad-2: rgba(208, 79, 31, 0.3);
+
+  --c-selection: rgba(255, 122, 65, 0.35);
+  --c-focus: rgba(255, 197, 158, 0.7);
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 
 html,
 body {
-  background: #0B0F1A;
-  color: #E6E8F0;
+  background: var(--c-bg);
+  color: var(--c-text);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent rubber-band scroll bleed on iOS when sheets/modals open */
-  overscroll-behavior-y: none;
   /* Allow vertical scroll but disable double-tap zoom and that 300ms tap delay */
   touch-action: manipulation;
 }
 
-/* Prevent any horizontal overflow from leaking on narrow phones */
-html, body {
-  overflow-x: hidden;
+/* Only the html element is the page scroller. Setting overscroll-behavior here
+   stops iOS rubber-banding without breaking scroll chaining inside the page. */
+html {
+  overscroll-behavior-y: none;
+}
+
+/* Prevent any horizontal overflow from leaking on narrow phones.
+   Using `clip` (not `hidden`) avoids the side-effect where a non-visible
+   overflow on one axis auto-promotes the other to `auto`, turning body into
+   a scroll container that swallows wheel/touch events. */
+body {
+  overflow-x: clip;
+}
+
+/* Smooth palette swap when toggling themes */
+html {
+  transition: background-color 220ms ease, color 220ms ease;
 }
 
 /* Kill tap highlight + tap delay on every interactive element */
@@ -52,17 +227,17 @@ h1, h2, h3, h4 {
 }
 
 ::selection {
-  background: rgba(124, 123, 255, 0.35);
-  color: #fff;
+  background: var(--c-selection);
+  color: var(--c-text-strong);
 }
 
 /* Aurora background */
 .aurora {
   background:
-    radial-gradient(60% 60% at 20% 10%, rgba(79, 70, 229, 0.25) 0%, transparent 60%),
-    radial-gradient(40% 40% at 90% 20%, rgba(240, 70, 127, 0.15) 0%, transparent 70%),
-    radial-gradient(50% 50% at 50% 100%, rgba(124, 123, 255, 0.18) 0%, transparent 60%),
-    #0B0F1A;
+    radial-gradient(60% 60% at 20% 10%, var(--c-aurora-1) 0%, transparent 60%),
+    radial-gradient(40% 40% at 90% 20%, var(--c-aurora-2) 0%, transparent 70%),
+    radial-gradient(50% 50% at 50% 100%, var(--c-aurora-3) 0%, transparent 60%),
+    var(--c-aurora-base);
 }
 
 /* Grid pattern */
@@ -90,9 +265,9 @@ h1, h2, h3, h4 {
   transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 .card-hover:hover {
-  border-color: rgba(124, 123, 255, 0.35);
+  border-color: var(--c-accent-soft);
   transform: translateY(-2px);
-  box-shadow: 0 18px 60px -30px rgba(79, 70, 229, 0.5);
+  box-shadow: 0 18px 60px -30px var(--c-btn-shadow);
 }
 
 /* Buttons */
@@ -112,10 +287,10 @@ h1, h2, h3, h4 {
   white-space: nowrap;
 }
 .btn-primary {
-  background: linear-gradient(180deg, #5b53ee 0%, #4338ca 100%);
-  color: white;
-  box-shadow: 0 0 0 1px rgba(124, 123, 255, 0.4),
-    0 12px 30px -10px rgba(79, 70, 229, 0.55);
+  background: linear-gradient(180deg, var(--c-btn-1) 0%, var(--c-btn-2) 100%);
+  color: var(--c-text-strong);
+  box-shadow: 0 0 0 1px var(--c-btn-ring),
+    0 12px 30px -10px var(--c-btn-shadow);
 }
 .btn-primary:hover {
   filter: brightness(1.08);
@@ -128,7 +303,7 @@ h1, h2, h3, h4 {
 }
 .btn-ghost {
   background: rgba(255, 255, 255, 0.04);
-  color: #E6E8F0;
+  color: var(--c-text);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .btn-ghost:hover {
@@ -137,12 +312,12 @@ h1, h2, h3, h4 {
 }
 .btn-outline {
   background: transparent;
-  border: 1px solid rgba(124, 123, 255, 0.4);
-  color: #C7C9FF;
+  border: 1px solid var(--c-accent-soft);
+  color: var(--c-accent-text);
 }
 .btn-outline:hover {
-  background: rgba(124, 123, 255, 0.1);
-  border-color: rgba(124, 123, 255, 0.6);
+  background: var(--c-accent-tint);
+  border-color: var(--c-accent);
 }
 
 /* Inputs */
@@ -152,7 +327,7 @@ h1, h2, h3, h4 {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
-  color: #E6E8F0;
+  color: var(--c-text);
   /* CRITICAL: 16px on mobile prevents iOS Safari from auto-zooming on focus */
   font-size: 16px;
   min-height: 48px;
@@ -168,9 +343,9 @@ h1, h2, h3, h4 {
 }
 .input:focus {
   outline: none;
-  border-color: rgba(124, 123, 255, 0.6);
+  border-color: var(--c-accent);
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 0 4px rgba(124, 123, 255, 0.15);
+  box-shadow: 0 0 0 4px var(--c-accent-tint);
 }
 
 /* Pills */
@@ -194,10 +369,10 @@ h1, h2, h3, h4 {
   background: rgba(255, 255, 255, 0.06);
 }
 .pill[data-active="true"] {
-  background: linear-gradient(180deg, rgba(91, 83, 238, 0.25), rgba(67, 56, 202, 0.25));
-  border-color: rgba(124, 123, 255, 0.6);
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(124, 123, 255, 0.3) inset;
+  background: linear-gradient(180deg, var(--c-pill-grad-1), var(--c-pill-grad-2));
+  border-color: var(--c-accent);
+  color: var(--c-text-strong);
+  box-shadow: 0 0 0 1px var(--c-accent-soft) inset;
 }
 
 /* Skeleton */
@@ -215,7 +390,7 @@ h1, h2, h3, h4 {
 
 /* Focus ring everywhere */
 *:focus-visible {
-  outline: 2px solid rgba(124, 123, 255, 0.6);
+  outline: 2px solid var(--c-focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -250,7 +425,7 @@ h1, h2, h3, h4 {
 
 /* Subtle gradient text */
 .text-gradient {
-  background: linear-gradient(120deg, #C7C9FF 0%, #FF9DBE 60%, #F5C97B 100%);
+  background: linear-gradient(120deg, var(--c-grad-1) 0%, var(--c-grad-2) 60%, var(--c-grad-3) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

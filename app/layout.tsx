@@ -2,7 +2,18 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_JP, Bricolage_Grotesque } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth/authOptions";
+import { DEFAULT_THEME, THEME_STORAGE_KEY, THEMES } from "@/lib/themes";
 import "./globals.css";
+
+// Runs before React hydrates so the saved palette is applied before first
+// paint — no flash of the default theme. Kept tiny + inlined on purpose.
+const themeInitScript = `(function(){try{var ids=${JSON.stringify(
+  THEMES.map((t) => t.id)
+)};var t=localStorage.getItem(${JSON.stringify(
+  THEME_STORAGE_KEY
+)});if(t&&ids.indexOf(t)!==-1){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme',${JSON.stringify(
+  DEFAULT_THEME
+)});}}catch(e){}})();`;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -51,7 +62,10 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await auth();
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-theme={DEFAULT_THEME}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${inter.variable} ${notoJp.variable} ${bricolage.variable} aurora min-h-screen antialiased`}
       >
