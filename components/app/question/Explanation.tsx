@@ -13,6 +13,16 @@ export function Explanation({
   tutorUrl: string | null;
 }) {
   if (!q.revealed) return null;
+  // Marked on the device; the explanation is still on its way from the server.
+  if (q.explanationEn == null && q.gloss == null) {
+    return (
+      <div className="space-y-2.5 border-t border-ink/10 pt-5" aria-busy="true" aria-label="Loading the explanation">
+        <div className="skeleton h-4 w-2/5" />
+        <div className="skeleton h-4 w-full" />
+        <div className="skeleton h-4 w-4/5" />
+      </div>
+    );
+  }
   const mine = q.userChoice != null ? plainText(q.options[q.userChoice] ?? "") : q.userText;
   const suggestions = [
     q.isCorrect === false && mine ? `Why isn't ${mine} right?` : "Why is this the answer?",

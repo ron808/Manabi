@@ -3,7 +3,8 @@ import { cleanPointLabel } from "@/lib/domain/points";
 import type { StoredQuestion } from "@/lib/domain/question";
 import { hasJapanese } from "@/lib/ja/normalize";
 import { plainText, sanitizeRuby } from "@/lib/ja/ruby";
-import { groq, MODEL_FAST, MODEL_WRITER, fixturesEnabled } from "./client";
+import { groq, fixturesEnabled } from "./client";
+import { checkerFor, coolDown, cooldownFor, nextModels, reasoningOptions } from "./models";
 import { fixtureQuestions } from "./fixture";
 import { VERIFIER_SYSTEM, WRITER_SYSTEM, verifierPrompt, writerPrompt, type BatchSpec } from "./prompt";
 import {
@@ -35,9 +36,10 @@ export class GenerationError extends Error {}
 
 /**
  * Writes a paper in small batches (Groq can't stream structured output, so
- * batches are how progress is reported), validates every question, has a
- * second model answer each multiple-choice question blind and drops the ones
- * it confidently disagrees with, then tops up anything lost.
+ * batches are how progress is reported), rotating the batches across the
+ * free models (see ./models). Validates every question, has a different
+ * model answer each multiple-choice question blind and drops the ones it
+ * confidently disagrees with, then tops up anything lost.
  */
 export async function generateQuestions(
   input: GenerateInput,
@@ -63,7 +65,13 @@ export async function generateQuestions(
         focusPoints: spreadFocus(input.focusPoints, i, batches.length),
         avoidPoints: avoid,
       };
-      const questions = await write(spec);
+      let questions: Prepared[] = [];
+      try {
+        questions = await write(spec);
+      } catch (err) {
+        // One failed batch shouldn't sink the paper; the top-up round refills it.
+        console.warn("[manabi] batch failed", err instanceof Error ? err.message : err);
+      }
       for (const q of questions) {
         if (kept.length >= total) break;
         if (kept.some((k) => k.key === q.key)) continue;
@@ -137,32 +145,36 @@ interface Prepared {
 }
 
 async function writeBatch(spec: BatchSpec): Promise<Prepared[]> {
-  const raw = await callWriter(spec);
-  const prepared = raw
+  const { questions, model } = await callWriter(spec);
+  const prepared = questions
     .map((g, i) => prepare(g, spec.formats[i] ?? g.format))
     .filter((p): p is Prepared => p !== null);
-  return verify(prepared);
+  return verify(prepared, checkerFor(model));
 }
 
-async function callWriter(spec: BatchSpec): Promise<GeneratedQuestion[]> {
-  const models = [MODEL_WRITER, MODEL_FAST];
+/** Tries the models in rotation order until one returns usable questions. */
+async function callWriter(spec: BatchSpec): Promise<{ questions: GeneratedQuestion[]; model: string }> {
   let lastError: unknown;
-  for (const model of models) {
+  for (const model of nextModels()) {
     try {
-      const completion = await groq().chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: WRITER_SYSTEM },
-          { role: "user", content: writerPrompt(spec) },
-        ],
-        temperature: 0.7,
-        reasoning_effort: "medium",
-        max_completion_tokens: 2000 + 700 * spec.formats.length,
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "paper", strict: true, schema: PAPER_JSON_SCHEMA as unknown as Record<string, unknown> },
+      const completion = await groq().chat.completions.create(
+        {
+          model,
+          messages: [
+            { role: "system", content: WRITER_SYSTEM },
+            { role: "user", content: writerPrompt(spec) },
+          ],
+          temperature: 0.7,
+          ...reasoningOptions(model, "medium"),
+          max_completion_tokens: 2000 + 700 * spec.formats.length,
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "paper", strict: true, schema: PAPER_JSON_SCHEMA as unknown as Record<string, unknown> },
+          },
         },
-      });
+        // Don't sit in the SDK's backoff on a rate limit: move to the next model.
+        { maxRetries: 0 }
+      );
       const content = completion.choices[0]?.message?.content;
       if (!content) throw new Error("empty response");
       const parsed = JSON.parse(content) as { questions?: unknown[] };
@@ -171,10 +183,11 @@ async function callWriter(spec: BatchSpec): Promise<GeneratedQuestion[]> {
         const r = generatedQuestionSchema.safeParse(q);
         if (r.success) out.push(r.data);
       }
-      if (out.length) return out;
+      if (out.length) return { questions: out, model };
       throw new Error("no valid questions in response");
     } catch (err) {
       lastError = err;
+      coolDown(model, cooldownFor(err));
       console.warn(`[manabi] writer failed (${model})`, err instanceof Error ? err.message : err);
     }
   }
@@ -249,12 +262,12 @@ export function shuffleOptions(options: string[], answerIndex: number, rand = Ma
   return { options: order.map((i) => options[i]), answerIndex: order.indexOf(answerIndex) };
 }
 
-async function verify(items: Prepared[]): Promise<Prepared[]> {
+async function verify(items: Prepared[], model: string): Promise<Prepared[]> {
   const mc = items.filter((p) => p.q.options.length === 4);
   if (!mc.length) return items;
   try {
     const completion = await groq().chat.completions.create({
-      model: MODEL_FAST,
+      model,
       messages: [
         { role: "system", content: VERIFIER_SYSTEM },
         {
@@ -271,7 +284,7 @@ async function verify(items: Prepared[]): Promise<Prepared[]> {
         },
       ],
       temperature: 0,
-      reasoning_effort: "low",
+      ...reasoningOptions(model, "low"),
       max_completion_tokens: 2500,
       response_format: {
         type: "json_schema",
@@ -285,9 +298,10 @@ async function verify(items: Prepared[]): Promise<Prepared[]> {
       const p = mc[a.n - 1];
       if (p && a.sure && a.choice - 1 !== p.q.answerIndex) rejected.add(p);
     }
-    if (rejected.size) console.warn(`[manabi] checker rejected ${rejected.size}/${mc.length} questions`);
+    if (rejected.size) console.warn(`[manabi] checker (${model}) rejected ${rejected.size}/${mc.length} questions`);
     return items.filter((p) => !rejected.has(p));
   } catch (err) {
+    coolDown(model, cooldownFor(err));
     // The checker is a safety net, not a gate: if it's down, keep the batch.
     console.warn("[manabi] checker unavailable", err instanceof Error ? err.message : err);
     return items;

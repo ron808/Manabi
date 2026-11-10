@@ -36,6 +36,13 @@ export interface StoredQuestion {
   tutor: TutorTurn[];
 }
 
+/** Salted hashes that let practice mode mark instantly (see lib/server/check.ts). */
+export interface AnswerCheck {
+  salt: string;
+  hashes: string[];
+  keepScript: boolean;
+}
+
 /** What the browser is allowed to see. Answer fields are present only once revealed. */
 export interface QuestionView {
   id: number;
@@ -62,6 +69,7 @@ export interface QuestionView {
   explanationJp: string | null;
   gloss: string | null;
   tutor: TutorTurn[];
+  check?: AnswerCheck | null;
 }
 
 export function isAnswered(q: Pick<StoredQuestion, "userChoice" | "userText">) {

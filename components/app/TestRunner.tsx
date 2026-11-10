@@ -8,6 +8,7 @@ import { useMounted } from "@/lib/client/useMounted";
 import { beginNavigation } from "@/components/ui/NavCurtain";
 import { ArrowLeft, ArrowRight, Bookmark, Clock, X } from "lucide-react";
 import { api, ApiClientError, saveSetting } from "@/lib/client/api";
+import { localVerdict } from "@/lib/client/localGrade";
 import type { QuestionView } from "@/lib/domain/question";
 import type { PaperView } from "@/lib/server/papers";
 import { ChoiceList } from "./question/ChoiceList";
@@ -97,10 +98,22 @@ export function TestRunner({ paper, furiganaDefault }: { paper: PaperView; furig
       userChoice: "choice" in response ? response.choice : null,
       userText: "text" in response ? response.text : null,
     });
+    const wasGuess = guessed;
+    // Practice mode: mark on the device straight away; the server's answer
+    // (with the explanation) lands a moment later and has the final say.
+    const request = api<AnswerResponse>(`/api/papers/${paper.id}/answers`, {
+      body: { questionId: target.id, ...response, ...(exam ? {} : { guessed: wasGuess }) },
+    });
+    if (!exam) {
+      const local = await localVerdict(target, response);
+      if (local) {
+        patch(target.id, { revealed: true, isCorrect: local.isCorrect, answerIndex: local.answerIndex, guessed: wasGuess });
+        setFreshMarks((s) => new Set(s).add(target.id));
+        setGuessed(false);
+      }
+    }
     try {
-      const res = await api<AnswerResponse>(`/api/papers/${paper.id}/answers`, {
-        body: { questionId: target.id, ...response, ...(exam ? {} : { guessed }) },
-      });
+      const res = await request;
       patch(target.id, { ...res.question, flagged: before.flagged });
       if (res.question.revealed) setFreshMarks((s) => new Set(s).add(target.id));
       setGuessed(false);
@@ -312,7 +325,7 @@ export function TestRunner({ paper, furiganaDefault }: { paper: PaperView; furig
                   <TypedAnswer
                     key={q.id}
                     q={q}
-                    pending={pending.has(q.id)}
+                    pending={pending.has(q.id) && !q.revealed}
                     animateMarks={freshMarks.has(q.id)}
                     draft={drafts[q.id] ?? q.userText ?? ""}
                     onDraft={(v) => setDrafts((d) => ({ ...d, [q.id]: v }))}
@@ -325,7 +338,7 @@ export function TestRunner({ paper, furiganaDefault }: { paper: PaperView; furig
                     q={q}
                     furigana={furigana}
                     selected={q.userChoice}
-                    pending={pending.has(q.id)}
+                    pending={pending.has(q.id) && !q.revealed}
                     onChoose={(i) => void submit(q, { choice: i })}
                     disabled={choiceLocked || pending.has(q.id)}
                     animateMarks={freshMarks.has(q.id)}

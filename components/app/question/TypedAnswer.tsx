@@ -40,7 +40,9 @@ export function TypedAnswer({
         {!q.isCorrect && (
           <div className="rounded-md bg-surface px-4 py-3.5 shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.4)]">
             <p className="eyebrow">Answer</p>
-            <p className="jp-sans mt-1 text-lg text-accent-ink">{q.answerText}</p>
+            <p className="jp-sans mt-1 text-lg text-accent-ink">
+              {q.answerText ?? <span className="skeleton inline-block h-5 w-24 align-middle" aria-label="Loading" />}
+            </p>
           </div>
         )}
       </div>

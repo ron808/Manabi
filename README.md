@@ -29,9 +29,17 @@ it sticks. N5 to N1.
 ## Stack
 
 Next.js 14 (App Router, TypeScript strict) · Tailwind · next-auth v5
-(credentials, JWT) · MongoDB + Mongoose · Groq (`openai/gpt-oss-120b`, with
-`openai/gpt-oss-20b` as fallback writer and blind checker, strict JSON-schema
-outputs) · ts-fsrs · WanaKana · Upstash rate limiting · framer-motion · Vitest.
+(credentials, JWT) · MongoDB + Mongoose · Groq · ts-fsrs · WanaKana · Upstash
+rate limiting · framer-motion · Vitest.
+
+### Groq models
+
+Calls rotate across every free Groq model with strict JSON-schema output —
+`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-20b` — because each
+has its own rate-limit bucket. A model that hits its limit sits out for its
+`retry-after`; a retired model sits out for an hour; the next one takes over
+instantly. The blind checker is always a different model from the writer.
+Override the pool with `GROQ_MODELS` (comma-separated) — see `lib/ai/models.ts`.
 
 ## Quick start
 
