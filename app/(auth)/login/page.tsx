@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { beginNavigation } from "@/components/ui/NavCurtain";
+import { beginNavigation, cancelNavigation } from "@/components/ui/NavCurtain";
 
 const REASONS: Record<string, string> = {
   expired: "Your session ended. Sign in again to carry on — your progress is saved.",
@@ -32,8 +32,10 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    beginNavigation();
     const res = await signIn("credentials", { email: email.trim().toLowerCase(), password, redirect: false }).catch(() => null);
     if (!res || res.error) {
+      cancelNavigation();
       setBusy(false);
       setError(
         res?.code === "rate_limited"
@@ -44,9 +46,10 @@ function LoginForm() {
       );
       return;
     }
-    beginNavigation();
-    router.replace(next);
-    router.refresh();
+    beginNavigation(() => {
+      router.replace(next);
+      router.refresh();
+    });
   }
 
   return (

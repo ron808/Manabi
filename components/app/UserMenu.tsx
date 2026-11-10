@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { LogOut, Settings } from "lucide-react";
+import { beginNavigation } from "@/components/ui/NavCurtain";
 
 export function UserMenu({ name }: { name: string }) {
   const [open, setOpen] = useState(false);
@@ -47,7 +48,7 @@ export function UserMenu({ name }: { name: string }) {
           <button
             type="button"
             role="menuitem"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => beginNavigation(() => void signOut({ callbackUrl: "/" }))}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm text-ink/80 hover:bg-ink/[0.05]"
           >
             <LogOut size={16} aria-hidden /> Sign out

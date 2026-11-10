@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { beginNavigation } from "@/components/ui/NavCurtain";
+import { beginNavigation, cancelNavigation } from "@/components/ui/NavCurtain";
 import { api, ApiClientError } from "@/lib/client/api";
 
 export default function RegisterPage() {
@@ -21,6 +21,7 @@ export default function RegisterPage() {
     setError(null);
     if (password.length < 8) return setError("Use at least 8 characters for your password.");
     setBusy(true);
+    beginNavigation();
     try {
       let timezone: string | null = null;
       try {
@@ -31,13 +32,15 @@ export default function RegisterPage() {
       await api("/api/auth/register", { body: { name: name.trim(), email: email.trim(), password, timezone } });
       const res = await signIn("credentials", { email: email.trim().toLowerCase(), password, redirect: false });
       if (!res || res.error) {
-        router.push("/login?reason=registered");
+        beginNavigation(() => router.push("/login?reason=registered"));
         return;
       }
-      beginNavigation();
-      router.replace("/today");
-      router.refresh();
+      beginNavigation(() => {
+        router.replace("/today");
+        router.refresh();
+      });
     } catch (err) {
+      cancelNavigation();
       setError(err instanceof ApiClientError ? err.message : "Couldn't create the account. Try again.");
       setBusy(false);
     }
