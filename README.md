@@ -2,97 +2,115 @@
 
 > Master Japanese, paper by paper.
 
-A full-stack JLPT study app built on Next.js 14, NextAuth v5, MongoDB Atlas,
-Groq (Llama-3.3-70B), Upstash Redis rate limiting, and Tailwind. Generates
-adaptive Japanese question papers, tracks every mistake, and gives a focused,
-mobile-first exam interface.
+Manabi writes JLPT-style Japanese papers at your level, marks them like a
+teacher, and brings every mistake back on a spaced-repetition schedule until
+it sticks. N5 to N1.
+
+## What it does
+
+- **Papers on demand** — real JLPT question types (漢字読み, 文脈規定,
+  文の組み立て ★, 内容理解, 課題理解 …) plus typed-recall drills. Practice
+  mode marks as you go; exam mode is timed and marked when you hand in.
+- **Questions checked twice** — a second model answers every multiple-choice
+  question blind; any it confidently disagrees with is thrown away and
+  rewritten.
+- **Learning points** — every question is tagged with the grammar point, word
+  or kanji it tests. Mastery is tracked per point, and "weak spots" papers aim
+  straight at the shaky ones.
+- **Review deck** — every mistake (and every lucky guess) becomes an FSRS card
+  that returns just before you'd forget it.
+- **Today** — one button: due reviews first, then ten fresh questions on your
+  weak points. Streak, daily goal, 18-week heatmap, exam countdown.
+- **Ask why** — a tutor that knows the exact question, the options and what
+  you picked.
+- **Japanese aids** — furigana on/off, listening questions spoken by the
+  device's Japanese voice, romaji → kana typing (WanaKana).
 
 ## Stack
 
-- Next.js 14 (App Router, TypeScript strict)
-- Tailwind CSS — custom dark theme (ink + brand indigo + sakura accents)
-- next-auth v5 (credentials provider, JWT sessions)
-- MongoDB Atlas + Mongoose
-- Groq SDK (server-only, `llama-3.3-70b-versatile`, `response_format: json_object`)
-- @upstash/ratelimit + @upstash/redis
-- zod for input validation, bcryptjs for password hashing
+Next.js 14 (App Router, TypeScript strict) · Tailwind · next-auth v5
+(credentials, JWT) · MongoDB + Mongoose · Groq (`openai/gpt-oss-120b`, with
+`openai/gpt-oss-20b` as fallback writer and blind checker, strict JSON-schema
+outputs) · ts-fsrs · WanaKana · Upstash rate limiting · framer-motion · Vitest.
 
 ## Quick start
 
 ```bash
-cp .env.example .env.local
-# Fill the values, then:
+cp .env.example .env.local   # fill in AUTH_SECRET and MONGODB_URI
 npm install
-npm run dev
-# → http://localhost:3000
+npm run dev                  # http://localhost:3000
 ```
 
-You'll need:
+With `GROQ_API_KEY` empty, local development uses a built-in set of sample
+questions (never in production), so the whole app works without a key.
 
-| Service | Where |
-| ------- | ----- |
-| MongoDB Atlas | https://cloud.mongodb.com — copy the connection string into `MONGODB_URI` |
-| Groq | https://console.groq.com — `GROQ_API_KEY` (server only, never `NEXT_PUBLIC_*`) |
-| Upstash Redis (optional) | https://console.upstash.com — `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`. If omitted, rate limiting is disabled. |
-| NextAuth secret | `openssl rand -base64 32` for both `NEXTAUTH_SECRET` and `AUTH_SECRET` |
+```bash
+npm test          # unit tests + a lifecycle test against local MongoDB (skipped if none)
+npm run typecheck
+npm run lint
+```
 
-## Architecture
+## Layout
 
 ```
-/app
-  page.tsx              landing
-  (auth)/login,register
-  (app)/
-    dashboard, configure
-    test/[paperId]
-    results/[paperId]
-    history, mistakes
+app/
+  page.tsx                 landing
+  (auth)/login, register
+  (app)/today, new, test/[id], results/[id], review, review/library, history, settings
   api/
     auth/[...nextauth], auth/register
-    papers/generate, papers, papers/[paperId]
-    papers/[paperId]/answer, papers/[paperId]/complete
-    mistakes, me
-
-/components
-  configure/  LevelSelector, DifficultySlider, FormatSelector, TestSettings
-  test/       QuestionNavigator, QuestionCard, AnswerOptions, Timer
-  results/    ScoreSummary, AnswerReview
-  dashboard/  StatsBar, RecentPapers
-  shared/     Logo, Navbar, ErrorBanner, SkeletonCard, Banner
-
-/lib
-  db/         mongoose singleton, User & Paper models
-  auth/       authOptions (NextAuth v5)
-  ai/         groq.ts — system + user prompt builders
-  validation/ zod schemas (strict, with custom-instructions rule)
-  ratelimit/  Upstash sliding-window helper
-  api/        helpers (requireAuth, applyRateLimit, jsonError)
-  types.ts    shared TS interfaces
-
-middleware.ts   protects /dashboard /configure /test /results /history /mistakes
+    me, me/password, me/export
+    papers                 GET list · POST generate (streams NDJSON progress)
+    papers/[id]            GET · answers · complete
+    papers/[id]/questions/[qid]           PATCH flag · audio · explain (streams)
+    reviews                GET due queue / library
+    reviews/[id]           PATCH archive · answer · grade · audio
+components/
+  ui/        design primitives — Seal (hanko), Mark (◯ ✕ 花丸), Ruby, KanaInput …
+  app/       app screens' client pieces — TestRunner, ReviewSession, NewPaperForm …
+  marketing/ landing scenes
+lib/
+  domain/    pure logic — JLPT catalogue, question shape + redaction, FSRS, dates
+  ai/        generation (batching, validation, checker), prompts, tutor, dev fixtures
+  server/    services used by pages and API routes — papers, reviews, stats, users
+  api/       route wrapper (auth, rate limit, zod, uniform errors)
+  ja/        furigana markup, answer normalisation, speech
+  db/        Mongoose models
+tests/       Vitest
 ```
+
+## How the backend keeps things honest
+
+- **Answers stay on the server.** A question's answer, explanation and (for
+  listening) script reach the browser only once it may see them: after
+  answering in practice mode, after hand-in in exam mode.
+- **The server keeps time.** `deadlineAt` is set when a paper is opened;
+  answers after the deadline are refused and the paper is handed in.
+  `timeTakenSeconds` is computed on the server.
+- **Completing is atomic.** Score and time are set in one update guarded by
+  `status != completed`; stats, activity, mastery and review cards are written
+  only by the call that made the transition.
+- **History is never rewritten.** Archiving a review card doesn't touch the
+  paper it came from.
+- **Old papers keep working.** v1 papers (letter-prefixed options) are
+  converted on read and upgraded in place when resumed; old mistakes are
+  imported into the review deck on first visit.
 
 ## Security
 
-- All API routes require a valid session (`requireAuth`).
-- Every Paper query is scoped by `userId`. A user cannot read another user's papers.
-- All bodies validated with strict zod schemas (unknown fields rejected).
-- Passwords hashed with bcryptjs (cost 12). Password hash never returned.
-- Rate limits: 5 paper generations per user per hour, 3 registers per IP per hour,
-  10 logins per IP per 15 min, 60 general API calls per user per minute.
-- CSP and security headers in `next.config.mjs`.
-- Groq key is server-only and never sent to the browser.
+- Every API route goes through `lib/api/handler.ts`: session verified against
+  the database (and against a token version, so changing your password signs
+  out other sessions), per-user rate limit, strict zod body validation.
+- Middleware verifies the session JWT at the edge.
+- Rate limits: 5 papers/hour, 30 tutor questions/hour, 10 logins/15 min per IP,
+  3 sign-ups/hour per IP, 5 sensitive account actions/15 min.
+- bcrypt (cost 12) with constant-time behaviour for unknown emails.
+- CSP with `connect-src 'self'` (Groq and Upstash are server-side only), no
+  `unsafe-eval` in production, HSTS, `frame-ancestors 'none'`.
 
 ## Deploying to Vercel
 
-1. Push to GitHub, import on Vercel.
-2. Add every env var from `.env.example` to the Vercel dashboard.
-3. Set `NEXTAUTH_URL` and `AUTH_URL` to your Vercel deployment URL.
-4. MongoDB Atlas: whitelist `0.0.0.0/0` (Vercel serverless IPs are dynamic).
-5. Smoke test: register → generate paper → take it → results.
-6. Hit `/api/papers/generate` 6× to verify the rate limit.
-
-## Out of scope (V1)
-
-OAuth, audio for listening questions, spaced repetition, PDF export,
-admin dashboard, email verification, password reset.
+1. Add the variables from `.env.example` in the Vercel dashboard.
+2. MongoDB Atlas: allow Vercel's dynamic IPs (`0.0.0.0/0`) or use a private
+   endpoint.
+3. `vercel.json` gives paper generation and the tutor up to 60 s.

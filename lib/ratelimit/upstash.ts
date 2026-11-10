@@ -32,7 +32,9 @@ const LIMITS = {
   generate: { tokens: 5, windowSec: 60 * 60, prefix: "rl:generate" },
   register: { tokens: 3, windowSec: 60 * 60, prefix: "rl:register" },
   login: { tokens: 10, windowSec: 60 * 15, prefix: "rl:login" },
-  api: { tokens: 60, windowSec: 60, prefix: "rl:api" },
+  api: { tokens: 90, windowSec: 60, prefix: "rl:api" },
+  tutor: { tokens: 30, windowSec: 60 * 60, prefix: "rl:tutor" },
+  sensitive: { tokens: 5, windowSec: 60 * 15, prefix: "rl:sensitive" },
 } satisfies Record<string, LimitDef>;
 
 export type LimitKey = keyof typeof LIMITS;

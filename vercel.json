@@ -2,8 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["iad1"],
   "functions": {
-    "app/api/papers/generate/route.ts": {
-      "maxDuration": 60
-    }
+    "app/api/papers/route.ts": { "maxDuration": 60 },
+    "app/api/papers/[paperId]/questions/[questionId]/explain/route.ts": { "maxDuration": 60 }
   }
 }

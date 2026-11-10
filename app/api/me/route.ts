@@ -1,38 +1,21 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/db/models/User";
-import { applyRateLimit, requireAuth } from "@/lib/api/helpers";
+import { route } from "@/lib/api/handler";
+import { ApiError } from "@/lib/api/errors";
+import { isValidTimeZone } from "@/lib/domain/dates";
+import { deleteAccount, updateProfile } from "@/lib/server/users";
+import { deleteAccountSchema, profileSchema } from "@/lib/validation/schemas";
 
-export async function GET() {
-  const authed = await requireAuth();
-  if (!authed.ok) return authed.response;
+export const dynamic = "force-dynamic";
 
-  const [limited] = await Promise.all([
-    applyRateLimit("api", `user:${authed.session.userId}`),
-    connectDB(),
-  ]);
-  if (limited) return limited;
+export const GET = route({}, async ({ user }) => ({ name: user.name, email: user.email, settings: user.settings }));
 
-  const user = await User.findById(authed.session.userId)
-    .select("name email totalPapers totalCorrect totalQuestions createdAt")
-    .lean();
+export const PATCH = route({ body: profileSchema }, async ({ user, body }) => {
+  const tz = body.settings?.timezone;
+  if (tz != null && !isValidTimeZone(tz)) throw new ApiError("bad_request", "Unknown timezone.");
+  const updated = await updateProfile(user, body);
+  return { name: updated.name, email: updated.email, settings: updated.settings };
+});
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-  return NextResponse.json({
-    name: user.name,
-    email: user.email,
-    totalPapers: user.totalPapers,
-    totalCorrect: user.totalCorrect,
-    totalQuestions: user.totalQuestions,
-    accuracy:
-      user.totalQuestions > 0
-        ? Math.round((user.totalCorrect / user.totalQuestions) * 100)
-        : 0,
-    memberSince:
-      user.createdAt instanceof Date
-        ? user.createdAt.toISOString()
-        : user.createdAt,
-  });
-}
+export const DELETE = route({ limit: "sensitive", body: deleteAccountSchema }, async ({ user, body }) => {
+  await deleteAccount(user, body.password);
+  return { ok: true };
+});
