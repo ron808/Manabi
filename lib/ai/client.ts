@@ -1,9 +1,5 @@
 import Groq from "groq-sdk";
 
-export const MODEL_WRITER = "openai/gpt-oss-120b";
-/** Fallback writer and the blind checker: same strict-schema support, separate rate-limit bucket. */
-export const MODEL_FAST = "openai/gpt-oss-20b";
-
 let _client: Groq | null = null;
 
 export function hasGroqKey(): boolean {

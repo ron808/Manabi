@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Headphones, Pause, Play, Snail } from "lucide-react";
 import { Ruby } from "@/components/ui/Ruby";
 import { api } from "@/lib/client/api";
 import { useJapaneseSpeech } from "@/lib/ja/speech";
 
 /**
- * Plays a listening question. The script is fetched only when play is
- * pressed, and shown as text only after the question is answered (or when the
- * device has no Japanese voice).
+ * Plays a listening question. The script is fetched in the background as the
+ * question appears (never in the page HTML), so a tap can start speech
+ * immediately — iOS only allows speech that begins inside the tap itself.
+ * It is shown as text only after the question is answered, or when the
+ * device has no Japanese voice.
  */
 export function ListeningPlayer({
   scriptUrl,
@@ -20,29 +22,43 @@ export function ListeningPlayer({
   revealedScript: string | null;
   furigana: boolean;
 }) {
-  const { ready, available, speaking, speak, stop, unlock } = useJapaneseSpeech();
+  const { ready, available, speaking, blocked, speak, stop } = useJapaneseSpeech();
   const [script, setScript] = useState<string | null>(revealedScript);
   const [error, setError] = useState<string | null>(null);
   const [plays, setPlays] = useState(0);
+  const loading = useRef<Promise<string> | null>(null);
 
-  async function getScript() {
-    if (script) return script;
-    const res = await api<{ script: string }>(scriptUrl);
-    setScript(res.script);
-    return res.script;
+  function getScript(): Promise<string> {
+    if (script) return Promise.resolve(script);
+    loading.current ??= api<{ script: string }>(scriptUrl).then((res) => {
+      setScript(res.script);
+      return res.script;
+    });
+    return loading.current;
   }
 
-  async function play(rate?: number) {
+  useEffect(() => {
+    getScript().catch(() => {
+      loading.current = null;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scriptUrl]);
+
+  function play(rate?: number) {
     setError(null);
     if (speaking) return stop();
-    unlock();
-    try {
-      const s = await getScript();
-      speak(s, rate ? { rate } : undefined);
-      setPlays((n) => n + 1);
-    } catch {
-      setError("Couldn't load the audio. Try again.");
-    }
+    const say = (s: string) => {
+      if (speak(s, rate ? { rate } : undefined)) setPlays((n) => n + 1);
+      else setError("Couldn't start the audio. Check your volume and try again.");
+    };
+    // Usually already loaded, so speech starts inside this tap.
+    if (script) return say(script);
+    getScript()
+      .then(say)
+      .catch(() => {
+        loading.current = null;
+        setError("Couldn't load the audio. Try again.");
+      });
   }
 
   const noVoice = ready && !available;
@@ -65,14 +81,14 @@ export function ListeningPlayer({
           </div>
         ) : (
           <>
-            <button type="button" disabled={!ready} onClick={() => void play()} className="btn btn-ink btn-sm">
+            <button type="button" disabled={!ready} onClick={() => play()} className="btn btn-ink btn-sm">
               {speaking ? <Pause size={16} aria-hidden /> : <Play size={16} aria-hidden />}
               {speaking ? "Stop" : plays ? "Play again" : "Play"}
             </button>
             <button
               type="button"
               disabled={!ready || speaking}
-              onClick={() => void play(0.7)}
+              onClick={() => play(0.7)}
               className="btn btn-quiet btn-sm"
               aria-label="Play slowly"
             >
@@ -82,6 +98,7 @@ export function ListeningPlayer({
         )}
       </div>
       {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+      {blocked && !error && <p className="mt-2 text-sm text-ink/70">Your browser paused the audio. Tap Play again to hear it.</p>}
       {showText && (
         <div className="mt-4 border-t border-ink/10 pt-3">
           <p className="eyebrow mb-1">Script</p>

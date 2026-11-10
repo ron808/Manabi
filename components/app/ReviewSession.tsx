@@ -7,6 +7,8 @@ import { useMounted } from "@/lib/client/useMounted";
 import { ArrowRight } from "lucide-react";
 import { Hanamaru } from "@/components/ui/Mark";
 import { api, ApiClientError, saveSetting } from "@/lib/client/api";
+import { localVerdict } from "@/lib/client/localGrade";
+import type { QuestionView } from "@/lib/domain/question";
 import { plainText } from "@/lib/ja/ruby";
 import type { ReviewCard, ReviewReveal } from "@/lib/server/reviews";
 import { ChoiceList } from "./question/ChoiceList";
@@ -30,6 +32,8 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
   const [queue, setQueue] = useState<ReviewCard[]>(cards);
   const [index, setIndex] = useState(0);
   const [reveal, setReveal] = useState<ReviewReveal | null>(null);
+  /** Marked on the device while the server's answer is on its way. */
+  const [provisional, setProvisional] = useState<QuestionView | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +52,23 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
     setBusy(true);
     setError(null);
     if ("choice" in response) setPicked(response.choice);
+    const request = api<ReviewReveal>(`/api/reviews/${card.id}/answer`, { body: response });
+    const local = await localVerdict(card.question, response);
+    if (local) {
+      setProvisional({
+        ...card.question,
+        answered: true,
+        revealed: true,
+        userChoice: "choice" in response ? response.choice : null,
+        userText: "text" in response ? response.text : null,
+        isCorrect: local.isCorrect,
+        answerIndex: local.answerIndex,
+      });
+    }
     try {
-      const res = await api<ReviewReveal>(`/api/reviews/${card.id}/answer`, { body: response });
+      const res = await request;
       setReveal(res);
+      setProvisional(null);
       setTally((t) => ({ done: t.done + 1, right: t.right + (res.isCorrect ? 1 : 0) }));
       // A miss comes back once more at the end of this session.
       const requeue = !res.isCorrect && !requeued.current.has(card.id);
@@ -61,6 +79,7 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
       setAgainInSession(requeue);
     } catch (err) {
       setPicked(null);
+      setProvisional(null);
       setError(err instanceof ApiClientError ? err.message : "Couldn't check that. Try again.");
     } finally {
       setBusy(false);
@@ -80,6 +99,7 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
       setBusy(false);
     }
     setReveal(null);
+    setProvisional(null);
     setPicked(null);
     setError(null);
     setIndex((i) => i + 1);
@@ -136,7 +156,7 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
     );
   }
 
-  const q = reveal ? reveal.question : card.question;
+  const q = reveal ? reveal.question : provisional ?? card.question;
   const original =
     reveal && reveal.original.choice != null
       ? plainText(card.question.options[reveal.original.choice] ?? "")
@@ -183,13 +203,13 @@ export function ReviewSession({ cards, furiganaDefault }: { cards: ReviewCard[];
           <QuestionStem q={q} furigana={furigana} scriptUrl={`/api/reviews/${card.id}/audio`} />
           <div className="mt-7">
             {q.typed ? (
-              <TypedAnswer key={`${card.id}-${index}`} q={q} pending={busy} onSubmit={(text) => void answer({ text })} />
+              <TypedAnswer key={`${card.id}-${index}`} q={q} pending={busy && !q.revealed} onSubmit={(text) => void answer({ text })} />
             ) : (
               <ChoiceList
                 q={q}
                 furigana={furigana}
                 selected={reveal ? reveal.question.userChoice : picked}
-                pending={busy}
+                pending={busy && !q.revealed}
                 onChoose={(i) => void answer({ choice: i })}
                 disabled={busy || !!reveal}
               />

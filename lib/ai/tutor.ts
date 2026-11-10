@@ -1,7 +1,8 @@
 import type { StoredQuestion, TutorTurn } from "@/lib/domain/question";
 import { formatLabel } from "@/lib/domain/question";
 import { plainText } from "@/lib/ja/ruby";
-import { groq, MODEL_WRITER, fixturesEnabled } from "./client";
+import { groq, fixturesEnabled } from "./client";
+import { coolDown, cooldownFor, nextModels, reasoningOptions } from "./models";
 import { fixtureTutorReply } from "./fixture";
 import { TUTOR_SYSTEM } from "./prompt";
 
@@ -39,21 +40,43 @@ export async function* tutorReply(
     }
     return;
   }
-  const stream = await groq().chat.completions.create({
-    model: MODEL_WRITER,
-    stream: true,
-    temperature: 0.4,
-    reasoning_effort: "low",
-    include_reasoning: false,
-    max_completion_tokens: 1200,
-    messages: [
-      { role: "system", content: `${TUTOR_SYSTEM}\n\nThe question:\n${questionBrief(q)}` },
-      ...history.slice(-6).map((t) => ({ role: t.role, content: t.content })),
-      { role: "user", content: message },
-    ],
-  });
+  const messages = [
+    { role: "system" as const, content: `${TUTOR_SYSTEM}\n\nThe question:\n${questionBrief(q)}` },
+    ...history.slice(-6).map((t) => ({ role: t.role, content: t.content })),
+    { role: "user" as const, content: message },
+  ];
+  // Same rotation as paper writing; fail over before the first token arrives.
+  let stream: Awaited<ReturnType<typeof openStream>> | null = null;
+  let lastError: unknown;
+  for (const model of nextModels()) {
+    try {
+      stream = await openStream(model, messages);
+      break;
+    } catch (err) {
+      lastError = err;
+      coolDown(model, cooldownFor(err));
+    }
+  }
+  if (!stream) throw lastError ?? new Error("No model available");
   for await (const chunk of stream) {
     const text = chunk.choices[0]?.delta?.content;
     if (text) yield text;
   }
+}
+
+function openStream(
+  model: string,
+  messages: { role: "system" | "user" | "assistant"; content: string }[]
+) {
+  return groq().chat.completions.create(
+    {
+      model,
+      stream: true,
+      temperature: 0.4,
+      ...reasoningOptions(model, "low"),
+      max_completion_tokens: 1200,
+      messages,
+    },
+    { maxRetries: 0 }
+  );
 }

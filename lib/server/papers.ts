@@ -13,6 +13,7 @@ import {
   type Response,
   type StoredQuestion,
 } from "@/lib/domain/question";
+import { withCheck } from "./check";
 import { createReviewItems, recordActivity, recordMastery } from "./learning";
 import type { CurrentUser } from "./session";
 
@@ -86,7 +87,7 @@ export function toPaperView(p: PaperDoc): PaperView {
     timeTakenSeconds: p.timeTakenSeconds ?? null,
     score: p.score ?? null,
     totalQuestions: p.totalQuestions,
-    questions: p.questions.map((q) => toView(q, p.mode, p.status)),
+    questions: p.questions.map((q) => withCheck(toView(q, p.mode, p.status), q, p.mode)),
     serverNow: new Date().toISOString(),
   };
 }

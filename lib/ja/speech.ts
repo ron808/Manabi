@@ -51,103 +51,109 @@ export function scriptLines(script: string): Line[] {
   return lines;
 }
 
-let unlocked = false;
+/** How long to keep looking for voices before deciding the device has none. */
+const VOICE_WAIT_MS = 6000;
 
 export function useJapaneseSpeech() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [ready, setReady] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  /** The browser refused to speak (no tap on the page yet). */
+  const [blocked, setBlocked] = useState(false);
   const token = useRef(0);
+  // Chrome garbage-collects an utterance that nothing references, and then
+  // never fires its onend — keep the current one alive.
+  const current = useRef<SpeechSynthesisUtterance | null>(null);
 
+  // Chrome fills the voice list late and doesn't reliably fire
+  // "voiceschanged" for listeners added after the page loaded, so poll too.
   useEffect(() => {
     if (!("speechSynthesis" in window)) {
       setReady(true);
       return;
     }
+    const started = Date.now();
+    const tokens = token;
+    let poll = 0;
     const load = () => {
-      setVoices(japaneseVoices());
-      setReady(true);
+      const found = japaneseVoices();
+      if (found.length) {
+        setVoices(found);
+        setReady(true);
+        window.clearInterval(poll);
+      } else if (Date.now() - started > VOICE_WAIT_MS) {
+        setReady(true);
+        window.clearInterval(poll);
+      }
     };
     load();
+    poll = window.setInterval(load, 250);
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    // Some browsers never fire voiceschanged when the list is already final.
-    const t = window.setTimeout(() => setReady(true), 1200);
     return () => {
+      window.clearInterval(poll);
       window.speechSynthesis.removeEventListener("voiceschanged", load);
-      window.clearTimeout(t);
+      tokens.current++;
       window.speechSynthesis.cancel();
     };
   }, []);
 
-  // Chrome garbage-collects queued utterances (and then never fires onend)
-  // unless something holds a reference to them.
-  const queue = useRef<SpeechSynthesisUtterance[]>([]);
-
-  // Chrome desktop silently pauses speech after ~15s; nudging it keeps it going.
-  useEffect(() => {
-    if (!speaking) return;
-    const id = window.setInterval(() => {
-      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) window.speechSynthesis.resume();
-    }, 8000);
-    return () => window.clearInterval(id);
-  }, [speaking]);
-
   const stop = useCallback(() => {
     token.current++;
-    queue.current = [];
+    current.current = null;
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
 
   /**
-   * iOS Safari only lets a page speak once speech has started inside a tap.
-   * Call this synchronously in the click handler, before any `await`.
+   * Speaks a script line by line, each starting when the previous ends.
+   * Must be called directly from a tap/click (no `await` before it) — iOS
+   * Safari only allows speech that starts inside a user gesture.
    */
-  const unlock = useCallback(() => {
-    if (!("speechSynthesis" in window) || unlocked) return;
-    unlocked = true;
-    const u = new SpeechSynthesisUtterance("");
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-  }, []);
-
   const speak = useCallback(
     (script: string, { rate = 0.95 }: { rate?: number } = {}) => {
-      if (!voices.length) return;
       const synth = window.speechSynthesis;
-      const busy = synth.speaking || synth.pending;
-      token.current++;
-      if (busy) synth.cancel();
-      const mine = token.current;
+      const list = voices.length ? voices : japaneseVoices();
+      if (!list.length) return false;
+      if (synth.speaking || synth.pending) synth.cancel();
+      const mine = ++token.current;
       const lines = scriptLines(script);
-      const utterances = lines.map((line, i) => {
+      let i = 0;
+      const next = () => {
+        if (token.current !== mine) return;
+        const line = lines[i++];
+        if (!line) {
+          current.current = null;
+          setSpeaking(false);
+          return;
+        }
         const u = new SpeechSynthesisUtterance(line.text);
         u.lang = "ja-JP";
-        u.voice = voices[line.speaker % voices.length];
+        u.voice = list[line.speaker % list.length];
         // With fewer voices than speakers, a lower pitch tells the second one apart.
-        u.pitch = line.speaker >= voices.length ? 0.78 : 1;
+        u.pitch = line.speaker >= list.length ? 0.78 : 1;
         u.rate = rate;
-        if (i === lines.length - 1) {
-          u.onend = () => token.current === mine && setSpeaking(false);
-        }
+        u.onend = next;
         u.onerror = (e) => {
-          // "interrupted"/"canceled" just mean we stopped it ourselves.
-          if (token.current === mine && e.error !== "interrupted" && e.error !== "canceled") setSpeaking(false);
+          // "interrupted"/"canceled" mean we stopped it ourselves.
+          if (e.error === "interrupted" || e.error === "canceled") return;
+          if (e.error === "not-allowed") {
+            token.current++;
+            setSpeaking(false);
+            setBlocked(true);
+            return;
+          }
+          next();
         };
-        return u;
-      });
-      queue.current = utterances;
-      setSpeaking(true);
-      const enqueue = () => {
-        if (token.current !== mine) return;
-        utterances.forEach((u) => synth.speak(u));
+        current.current = u;
+        synth.speak(u);
       };
-      // Chrome drops speech queued in the same tick as cancel().
-      if (busy) window.setTimeout(enqueue, 80);
-      else enqueue();
+      setBlocked(false);
+      setSpeaking(true);
+      next();
+      return true;
     },
     [voices]
   );
 
-  return { ready, available: voices.length > 0, speaking, speak, stop, unlock };
+  return { ready, available: voices.length > 0, speaking, blocked, speak, stop };
 }

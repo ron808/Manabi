@@ -494,3 +494,61 @@ html[data-vt="theme"]::view-transition-new(root) {
   opacity: 0;
   transition: opacity 0.1s ease;
 }
+
+/* Paper-writing loader (components/app/useGenerate.tsx): traditional clouds
+   rise into place, then each bobs at its own pace while facts rotate. */
+.gen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-x: clip;
+  overflow-y: auto;
+  background: rgb(var(--ground));
+  animation: gen-fade 0.25s ease both;
+}
+.gen-cloud {
+  position: absolute;
+  pointer-events: none;
+  animation: gen-cloud-in 0.7s var(--ease-out) var(--enter-delay) both;
+}
+.gen-cloud-bob {
+  animation: gen-bob var(--float) ease-in-out var(--float-delay) infinite;
+}
+.gen-card {
+  animation: gen-card-in 0.5s var(--ease-out) 0.15s both;
+}
+.gen-fact {
+  animation: gen-fact-in 0.45s var(--ease-out) both;
+}
+@keyframes gen-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes gen-cloud-in {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+}
+@keyframes gen-bob {
+  0%,
+  100% {
+    transform: translate3d(0, -10px, 0);
+  }
+  50% {
+    transform: translate3d(6px, 10px, 0);
+  }
+}
+@keyframes gen-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+@keyframes gen-fact-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

@@ -13,6 +13,7 @@ import {
 } from "@/lib/domain/question";
 import type { Section } from "@/lib/domain/jlpt";
 import { gradeCard, humanInterval, previewIntervals, type ReviewRating } from "@/lib/domain/srs";
+import { withCheck } from "./check";
 import { createReviewItems, recordActivity, recordMastery } from "./learning";
 import type { CurrentUser } from "./session";
 
@@ -75,7 +76,7 @@ function toCard(item: ReviewItemDoc): ReviewCard {
     due: new Date(item.card.due).toISOString(),
     reps: item.card.reps,
     lapses: item.card.lapses,
-    question: toView(blankQuestion(q), "practice", "in_progress"),
+    question: withCheck(toView(blankQuestion(q), "practice", "in_progress"), q, "practice"),
   };
 }
 
