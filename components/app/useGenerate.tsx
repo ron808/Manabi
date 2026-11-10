@@ -77,8 +77,7 @@ export function useGenerate() {
               setState({ phase: "running", done: event.done, total: event.total, label });
             } else if (event.type === "done") {
               // The page-change clouds take over from the loader's clouds.
-              beginNavigation();
-              router.push(`/test/${event.paperId}`);
+              beginNavigation(() => router.push(`/test/${event.paperId}`));
               return;
             } else {
               throw new ApiClientError(event.message, 502, "generation_failed");

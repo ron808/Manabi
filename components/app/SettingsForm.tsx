@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { Check, Download, LogOut } from "lucide-react";
+import { beginNavigation } from "@/components/ui/NavCurtain";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { api, ApiClientError } from "@/lib/client/api";
 import { LEVELS, type Level } from "@/lib/domain/jlpt";
@@ -215,7 +216,11 @@ export function SettingsForm({ name: initialName, email, settings }: { name: str
         <a href="/api/me/export" className="btn btn-quiet btn-sm w-fit" download>
           <Download size={15} aria-hidden /> Download everything (JSON)
         </a>
-        <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="btn btn-quiet btn-sm w-fit">
+        <button
+          type="button"
+          onClick={() => beginNavigation(() => void signOut({ callbackUrl: "/" }))}
+          className="btn btn-quiet btn-sm w-fit"
+        >
           <LogOut size={15} aria-hidden /> Sign out
         </button>
         <DeleteAccount />
@@ -235,7 +240,7 @@ function PasswordChange() {
         void saver.run(async () => {
           await api("/api/me/password", { body: { current, next } });
           // The session we hold was just invalidated; sign in again with the new password.
-          await signOut({ callbackUrl: "/login?reason=password" });
+          beginNavigation(() => void signOut({ callbackUrl: "/login?reason=password" }));
         });
       }}
       className="max-w-sm space-y-4"
@@ -279,7 +284,7 @@ function DeleteAccount() {
         e.preventDefault();
         void saver.run(async () => {
           await api("/api/me", { method: "DELETE", body: { password } });
-          await signOut({ callbackUrl: "/" });
+          beginNavigation(() => void signOut({ callbackUrl: "/" }));
         });
       }}
       className="max-w-sm space-y-3 rounded-md bg-accent/[0.07] p-4"

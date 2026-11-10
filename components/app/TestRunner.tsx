@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMounted } from "@/lib/client/useMounted";
-import { beginNavigation } from "@/components/ui/NavCurtain";
+import { beginNavigation, cancelNavigation } from "@/components/ui/NavCurtain";
 import { ArrowLeft, ArrowRight, Bookmark, Clock, X } from "lucide-react";
 import { api, ApiClientError, saveSetting } from "@/lib/client/api";
 import { localVerdict } from "@/lib/client/localGrade";
@@ -67,12 +67,15 @@ export function TestRunner({ paper, furiganaDefault }: { paper: PaperView; furig
     if (handingIn) return;
     setHandingIn(true);
     setError(null);
+    beginNavigation();
     try {
       await api(`/api/papers/${paper.id}/complete`, { method: "POST" });
-      beginNavigation();
-      router.replace(`/results/${paper.id}`);
-      router.refresh();
+      beginNavigation(() => {
+        router.replace(`/results/${paper.id}`);
+        router.refresh();
+      });
     } catch (err) {
+      cancelNavigation();
       setHandingIn(false);
       setConfirming(false);
       setError(err instanceof ApiClientError ? err.message : "Couldn't hand the paper in. Try again.");
