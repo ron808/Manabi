@@ -2,469 +2,495 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Theme tokens ──────────────────────────────────────────────────────── */
-/* Each theme defines the same set of variables. Switching the data-theme
-   attribute on <html> swaps the entire palette. Default is "manabi". */
+/* ─── Akapen design tokens ───────────────────────────────────────────────
+   One ground, one ink, one accent (朱 vermilion: the teacher's red pen) plus
+   a raised surface and a sunken well. Stored as RGB channels so Tailwind's
+   opacity modifiers work: `text-ink/60`, `border-ink/10`.
 
-:root,
-[data-theme="manabi"] {
-  color-scheme: dark;
-  --c-bg: #0B0F1A;
-  --c-text: #E6E8F0;
-  --c-text-strong: #FFFFFF;
+   Themes: "paper" (light), "sumi" (dark), or "system" (no attribute, follows
+   the OS). The sumi block appears twice on purpose — once for the explicit
+   choice and once for system-dark. */
 
-  /* Aurora background */
-  --c-aurora-base: #0B0F1A;
-  --c-aurora-1: rgba(79, 70, 229, 0.25);
-  --c-aurora-2: rgba(240, 70, 127, 0.15);
-  --c-aurora-3: rgba(124, 123, 255, 0.18);
+@layer base {
+  :root {
+    color-scheme: light;
+    --ground: 245 241 233;
+    --surface: 252 250 245;
+    --sunken: 236 230 218;
+    --ink: 28 25 21;
+    --accent: 207 57 36;
+    --accent-ink: 172 42 24;
+    --on-accent: 255 252 247;
+    --line: 28 25 21;
+    --grid-alpha: 0.055;
+    --shadow: 60 40 20;
 
-  /* Headline gradient */
-  --c-grad-1: #C7C9FF;
-  --c-grad-2: #FF9DBE;
-  --c-grad-3: #F5C97B;
+    /* Japanese uses the device's own fonts: CJK webfonts are megabytes, and every
+       platform ships a good Mincho (the typeface of real JLPT booklets). */
+    --font-jp-serif: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", YuMincho, "Noto Serif CJK JP",
+      "Noto Serif JP", "Source Han Serif JP", "BIZ UDPMincho", serif;
+    --font-jp-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+      "Yu Gothic", Meiryo, "Noto Sans CJK JP", "Noto Sans JP", system-ui, sans-serif;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
-  /* Primary button */
-  --c-btn-1: #5b53ee;
-  --c-btn-2: #4338ca;
-  --c-btn-ring: rgba(124, 123, 255, 0.4);
-  --c-btn-shadow: rgba(79, 70, 229, 0.55);
+  :root[data-theme="sumi"] {
+    color-scheme: dark;
+    --ground: 21 19 17;
+    --surface: 32 29 26;
+    --sunken: 15 14 12;
+    --ink: 237 231 220;
+    --accent: 240 90 64;
+    --accent-ink: 247 128 104;
+    --on-accent: 21 19 17;
+    --line: 237 231 220;
+    --grid-alpha: 0.045;
+    --shadow: 0 0 0;
+  }
 
-  /* Pill / outline accents */
-  --c-accent: rgba(124, 123, 255, 0.6);
-  --c-accent-soft: rgba(124, 123, 255, 0.35);
-  --c-accent-tint: rgba(124, 123, 255, 0.1);
-  --c-accent-text: #C7C9FF;
-  --c-pill-grad-1: rgba(91, 83, 238, 0.25);
-  --c-pill-grad-2: rgba(67, 56, 202, 0.25);
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="paper"]) {
+      color-scheme: dark;
+      --ground: 21 19 17;
+      --surface: 32 29 26;
+      --sunken: 15 14 12;
+      --ink: 237 231 220;
+      --accent: 240 90 64;
+      --accent-ink: 247 128 104;
+      --on-accent: 21 19 17;
+      --line: 237 231 220;
+      --grid-alpha: 0.045;
+      --shadow: 0 0 0;
+    }
+  }
 
-  /* Selection / focus */
-  --c-selection: rgba(124, 123, 255, 0.35);
-  --c-focus: rgba(124, 123, 255, 0.6);
-}
+  html {
+    background: rgb(var(--ground));
+    color: rgb(var(--ink));
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
 
-[data-theme="sumi"] {
-  color-scheme: dark;
-  --c-bg: #050505;
-  --c-text: #F2F2F2;
-  --c-text-strong: #FFFFFF;
+  body {
+    min-height: 100svh;
+    background: rgb(var(--ground));
+    color: rgb(var(--ink));
+    font-family: var(--font-sans), var(--font-jp-sans);
+    font-weight: 450;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.006em;
+    overflow-x: clip;
+    touch-action: manipulation;
+  }
 
-  --c-aurora-base: #050505;
-  --c-aurora-1: rgba(255, 255, 255, 0.05);
-  --c-aurora-2: rgba(255, 255, 255, 0.03);
-  --c-aurora-3: rgba(180, 180, 180, 0.04);
+  /* Grayscale smoothing thins text on Macs: keep it for light-on-dark only. */
+  :root[data-theme="sumi"] body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="paper"]) body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  }
 
-  --c-grad-1: #FFFFFF;
-  --c-grad-2: #BFBFBF;
-  --c-grad-3: #888888;
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.03em;
+    line-height: 1.04;
+    font-weight: 650;
+    text-wrap: balance;
+  }
 
-  --c-btn-1: #FFFFFF;
-  --c-btn-2: #BFBFBF;
-  --c-btn-ring: rgba(255, 255, 255, 0.4);
-  --c-btn-shadow: rgba(255, 255, 255, 0.18);
+  ::selection {
+    background: rgb(var(--accent) / 0.22);
+    color: rgb(var(--ink));
+  }
 
-  --c-accent: rgba(255, 255, 255, 0.7);
-  --c-accent-soft: rgba(255, 255, 255, 0.35);
-  --c-accent-tint: rgba(255, 255, 255, 0.08);
-  --c-accent-text: #F2F2F2;
-  --c-pill-grad-1: rgba(255, 255, 255, 0.18);
-  --c-pill-grad-2: rgba(255, 255, 255, 0.08);
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+  }
 
-  --c-selection: rgba(255, 255, 255, 0.2);
-  --c-focus: rgba(255, 255, 255, 0.7);
-}
+  button,
+  a,
+  [role="button"],
+  [role="radio"],
+  [role="tab"] {
+    -webkit-tap-highlight-color: transparent;
+  }
 
-[data-theme="matcha"] {
-  color-scheme: dark;
-  --c-bg: #0E1A14;
-  --c-text: #E2EAE2;
-  --c-text-strong: #FFFFFF;
+  ruby {
+    ruby-align: center;
+  }
+  rt {
+    font-size: 0.48em;
+    font-family: var(--font-jp-sans);
+    font-weight: 500;
+    letter-spacing: 0;
+    -webkit-text-stroke: 0;
+    color: rgb(var(--ink) / 0.62);
+    user-select: none;
+  }
 
-  --c-aurora-base: #0E1A14;
-  --c-aurora-1: rgba(85, 167, 91, 0.28);
-  --c-aurora-2: rgba(245, 201, 123, 0.18);
-  --c-aurora-3: rgba(38, 102, 70, 0.22);
-
-  --c-grad-1: #B8E5BC;
-  --c-grad-2: #F5C97B;
-  --c-grad-3: #FFB382;
-
-  --c-btn-1: #4FA15A;
-  --c-btn-2: #2F6B3D;
-  --c-btn-ring: rgba(184, 229, 188, 0.4);
-  --c-btn-shadow: rgba(79, 161, 90, 0.55);
-
-  --c-accent: rgba(184, 229, 188, 0.6);
-  --c-accent-soft: rgba(184, 229, 188, 0.35);
-  --c-accent-tint: rgba(184, 229, 188, 0.1);
-  --c-accent-text: #B8E5BC;
-  --c-pill-grad-1: rgba(79, 161, 90, 0.28);
-  --c-pill-grad-2: rgba(47, 107, 61, 0.28);
-
-  --c-selection: rgba(184, 229, 188, 0.35);
-  --c-focus: rgba(184, 229, 188, 0.6);
-}
-
-[data-theme="yozora"] {
-  color-scheme: dark;
-  --c-bg: #050813;
-  --c-text: #E2F0FF;
-  --c-text-strong: #FFFFFF;
-
-  --c-aurora-base: #050813;
-  --c-aurora-1: rgba(34, 102, 235, 0.3);
-  --c-aurora-2: rgba(118, 200, 255, 0.18);
-  --c-aurora-3: rgba(191, 168, 255, 0.18);
-
-  --c-grad-1: #BCE4FF;
-  --c-grad-2: #6BB5FF;
-  --c-grad-3: #BFA8FF;
-
-  --c-btn-1: #2266EB;
-  --c-btn-2: #1A4FBC;
-  --c-btn-ring: rgba(118, 200, 255, 0.4);
-  --c-btn-shadow: rgba(34, 102, 235, 0.55);
-
-  --c-accent: rgba(118, 200, 255, 0.6);
-  --c-accent-soft: rgba(118, 200, 255, 0.35);
-  --c-accent-tint: rgba(118, 200, 255, 0.1);
-  --c-accent-text: #BCE4FF;
-  --c-pill-grad-1: rgba(34, 102, 235, 0.28);
-  --c-pill-grad-2: rgba(26, 79, 188, 0.28);
-
-  --c-selection: rgba(118, 200, 255, 0.35);
-  --c-focus: rgba(118, 200, 255, 0.6);
-}
-
-[data-theme="sunset"] {
-  color-scheme: dark;
-  --c-bg: #1A0B0F;
-  --c-text: #FFF0E8;
-  --c-text-strong: #FFFFFF;
-
-  --c-aurora-base: #1A0B0F;
-  --c-aurora-1: rgba(255, 122, 65, 0.3);
-  --c-aurora-2: rgba(245, 73, 113, 0.22);
-  --c-aurora-3: rgba(245, 201, 123, 0.18);
-
-  --c-grad-1: #FFC59E;
-  --c-grad-2: #FF7AA8;
-  --c-grad-3: #F5C97B;
-
-  --c-btn-1: #FF7A41;
-  --c-btn-2: #D04F1F;
-  --c-btn-ring: rgba(255, 197, 158, 0.4);
-  --c-btn-shadow: rgba(255, 122, 65, 0.55);
-
-  --c-accent: rgba(255, 197, 158, 0.7);
-  --c-accent-soft: rgba(255, 122, 65, 0.45);
-  --c-accent-tint: rgba(255, 122, 65, 0.12);
-  --c-accent-text: #FFC59E;
-  --c-pill-grad-1: rgba(255, 122, 65, 0.3);
-  --c-pill-grad-2: rgba(208, 79, 31, 0.3);
-
-  --c-selection: rgba(255, 122, 65, 0.35);
-  --c-focus: rgba(255, 197, 158, 0.7);
-}
-
-/* ─── Base ──────────────────────────────────────────────────────────────── */
-
-html,
-body {
-  background: var(--c-bg);
-  color: var(--c-text);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv11";
-  letter-spacing: -0.011em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Allow vertical scroll but disable double-tap zoom and that 300ms tap delay */
-  touch-action: manipulation;
-}
-
-/* Only the html element is the page scroller. Setting overscroll-behavior here
-   stops iOS rubber-banding without breaking scroll chaining inside the page. */
-html {
-  overscroll-behavior-y: none;
-}
-
-/* Prevent any horizontal overflow from leaking on narrow phones.
-   Using `clip` (not `hidden`) avoids the side-effect where a non-visible
-   overflow on one axis auto-promotes the other to `auto`, turning body into
-   a scroll container that swallows wheel/touch events. */
-body {
-  overflow-x: clip;
-}
-
-/* Smooth palette swap when toggling themes */
-html {
-  transition: background-color 220ms ease, color 220ms ease;
-}
-
-/* Kill tap highlight + tap delay on every interactive element */
-button,
-a,
-[role="button"],
-[role="radio"],
-[role="tab"],
-input[type="submit"] {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-h1, h2, h3, h4 {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.035em;
-  font-weight: 600;
-  line-height: 1.04;
-}
-
-.font-display {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.035em;
-  font-weight: 600;
-  font-feature-settings: "liga", "ss01";
-}
-
-::selection {
-  background: var(--c-selection);
-  color: var(--c-text-strong);
-}
-
-/* Aurora background */
-.aurora {
-  background:
-    radial-gradient(60% 60% at 20% 10%, var(--c-aurora-1) 0%, transparent 60%),
-    radial-gradient(40% 40% at 90% 20%, var(--c-aurora-2) 0%, transparent 70%),
-    radial-gradient(50% 50% at 50% 100%, var(--c-aurora-3) 0%, transparent 60%),
-    var(--c-aurora-base);
-}
-
-/* Grid pattern */
-.bg-grid {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-}
-
-/* Glassy card */
-.card {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.01) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-}
-
-.card-hover {
-  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-}
-.card-hover:hover {
-  border-color: var(--c-accent-soft);
-  transform: translateY(-2px);
-  box-shadow: 0 18px 60px -30px var(--c-btn-shadow);
-}
-
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.75rem;
-  /* min-height: 44px hits the iOS HIG / WCAG 2.5.5 target size */
-  padding: 0.7rem 1.1rem;
-  min-height: 44px;
-  font-weight: 500;
-  font-size: 0.95rem;
-  line-height: 1;
-  transition: all 180ms ease;
-  white-space: nowrap;
-}
-.btn-primary {
-  background: linear-gradient(180deg, var(--c-btn-1) 0%, var(--c-btn-2) 100%);
-  color: var(--c-text-strong);
-  box-shadow: 0 0 0 1px var(--c-btn-ring),
-    0 12px 30px -10px var(--c-btn-shadow);
-}
-.btn-primary:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-.btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--c-text);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--c-accent-soft);
-  color: var(--c-accent-text);
-}
-.btn-outline:hover {
-  background: var(--c-accent-tint);
-  border-color: var(--c-accent);
-}
-
-/* Inputs */
-.input {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem;
-  padding: 0.85rem 1rem;
-  color: var(--c-text);
-  /* CRITICAL: 16px on mobile prevents iOS Safari from auto-zooming on focus */
-  font-size: 16px;
-  min-height: 48px;
-  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
-}
-@media (min-width: 640px) {
-  .input {
-    font-size: 0.95rem;
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
-.input::placeholder {
-  color: rgba(230, 232, 240, 0.4);
-}
-.input:focus {
-  outline: none;
-  border-color: var(--c-accent);
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 0 4px var(--c-accent-tint);
-}
 
-/* Pills */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 1rem;
-  min-height: 40px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  font-size: 0.85rem;
-  color: rgba(230, 232, 240, 0.85);
-  cursor: pointer;
-  transition: all 150ms ease;
-  user-select: none;
-}
-.pill:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-}
-.pill[data-active="true"] {
-  background: linear-gradient(180deg, var(--c-pill-grad-1), var(--c-pill-grad-2));
-  border-color: var(--c-accent);
-  color: var(--c-text-strong);
-  box-shadow: 0 0 0 1px var(--c-accent-soft) inset;
-}
+/* Components live in their own layer so Tailwind utilities (`hidden`,
+   `w-full`, …) always win over them. */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.7rem 1.15rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1;
+    white-space: nowrap;
+    transition:
+      background-color 180ms var(--ease-out),
+      color 180ms var(--ease-out),
+      border-color 180ms var(--ease-out),
+      transform 180ms var(--ease-out);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .btn-primary {
+    background: rgb(var(--accent));
+    color: rgb(var(--on-accent));
+  }
+  .btn-ink {
+    background: rgb(var(--ink));
+    color: rgb(var(--ground));
+  }
+  .btn-quiet {
+    background: rgb(var(--surface));
+    color: rgb(var(--ink));
+    box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.12);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: rgb(var(--ink) / 0.75);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover:not(:disabled) {
+      background: rgb(var(--accent-ink));
+    }
+    .btn-ink:hover:not(:disabled) {
+      background: rgb(var(--ink) / 0.86);
+    }
+    .btn-quiet:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.28);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: rgb(var(--ink) / 0.06);
+      color: rgb(var(--ink));
+    }
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
 
-/* Skeleton */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.04) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
-  border-radius: 0.75rem;
-}
+  .field {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    background: rgb(var(--surface));
+    color: rgb(var(--ink));
+    box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.14);
+    /* 16px stops iOS Safari zooming on focus. */
+    font-size: 16px;
+    transition: box-shadow 160ms var(--ease-out);
+  }
+  .field::placeholder {
+    color: rgb(var(--ink) / 0.4);
+  }
+  .field:focus {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1.5px rgb(var(--accent)),
+      0 0 0 4px rgb(var(--accent) / 0.12);
+  }
+  .field:disabled {
+    opacity: 0.6;
+  }
 
-/* Focus ring everywhere */
-*:focus-visible {
-  outline: 2px solid var(--c-focus);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+  .label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgb(var(--ink) / 0.7);
+  }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
+  /* Selectable chip: formats, counts, filters. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 40px;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    background: rgb(var(--surface));
+    box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.12);
+    font-size: 0.875rem;
+    color: rgb(var(--ink) / 0.8);
+    transition:
+      box-shadow 160ms var(--ease-out),
+      background-color 160ms var(--ease-out),
+      color 160ms var(--ease-out);
+    user-select: none;
+  }
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"],
+  .chip[data-on="true"] {
+    background: rgb(var(--ink));
+    color: rgb(var(--ground));
+    box-shadow: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .chip:hover:not([aria-pressed="true"]):not([aria-checked="true"]):not([data-on="true"]) {
+      box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.3);
+    }
+  }
 
-/* Japanese text helper */
-.jp {
-  font-family: var(--font-jp), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "palt" 1;
-  /* On narrow phones, Japanese passages with long unbroken runs of kanji can
-     overflow horizontally. word-break: break-word lets them wrap at any point
-     while still respecting CJK line-breaking rules. */
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  line-break: strict;
-}
+  /* The exam sheet: the raised paper every question sits on. */
+  .sheet {
+    background: rgb(var(--surface));
+    border-radius: 20px;
+    box-shadow:
+      0 0 0 1px rgb(var(--line) / 0.08),
+      0 18px 40px -28px rgb(var(--shadow) / 0.45);
+  }
 
-/* Subtle gradient text */
-.text-gradient {
-  background: linear-gradient(120deg, var(--c-grad-1) 0%, var(--c-grad-2) 60%, var(--c-grad-3) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* A plain panel: quieter than a sheet. */
+  .panel {
+    background: rgb(var(--surface));
+    border-radius: 20px;
+    box-shadow: 0 0 0 1px rgb(var(--line) / 0.08);
+  }
+
+  /* 原稿用紙-style squares behind hero material. */
+  .grid-paper {
+    background-image:
+      linear-gradient(rgb(var(--line) / var(--grid-alpha)) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--line) / var(--grid-alpha)) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+  }
+
+  .jp {
+    font-family: var(--font-jp-serif), serif;
+    font-feature-settings: "palt" 1;
+    line-break: strict;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.02em;
+    /* Break between phrases (文節), not mid-word, where supported. */
+    word-break: auto-phrase;
+    /* Device Mincho fonts jump from regular straight to bold; a hairline
+       stroke gives the "a little heavier" step in between. */
+    -webkit-text-stroke: 0.012em currentColor;
+  }
+  .jp-sans {
+    font-family: var(--font-jp-sans);
+    line-break: strict;
+    overflow-wrap: anywhere;
+  }
+
+  .link {
+    color: rgb(var(--accent-ink));
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.35rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgb(var(--ink) / 0.6);
+    box-shadow: inset 0 0 0 1px rgb(var(--line) / 0.16);
+  }
+
+  .eyebrow {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgb(var(--ink) / 0.55);
+  }
+
+  .skeleton {
+    border-radius: 12px;
+    background: linear-gradient(
+      90deg,
+      rgb(var(--ink) / 0.05) 0%,
+      rgb(var(--ink) / 0.09) 50%,
+      rgb(var(--ink) / 0.05) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  /* Instrument Serif ships in one weight; thicken it a touch the same way. */
+  .font-serif {
+    -webkit-text-stroke: 0.014em currentColor;
   }
-  /* Safe-area utilities for iPhones with home indicator / notch */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
   .pt-safe {
-    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-top: env(safe-area-inset-top);
   }
   .pb-safe {
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-bottom: env(safe-area-inset-bottom);
   }
-  .pl-safe {
-    padding-left: max(env(safe-area-inset-left), 0px);
+  .scrollbar-none {
+    scrollbar-width: none;
   }
-  .pr-safe {
-    padding-right: max(env(safe-area-inset-right), 0px);
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
-  /* Add safe-area to existing padding (compose with px-4 etc.) */
-  .pb-safe-or-3 {
-    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+/* Landing reveals (state set by components/marketing/Reveal.tsx). */
+[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(18px);
+}
+[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.9s var(--ease-out),
+    transform 0.9s var(--ease-out);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+/* Theme switch: the new palette spreads from the toggle (see ThemeToggle). */
+html[data-vt="theme"]::view-transition-old(root),
+html[data-vt="theme"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-vt="theme"]::view-transition-new(root) {
+  animation: theme-reveal 0.55s var(--ease-out);
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--vt-x) var(--vt-y));
   }
-  .pb-safe-or-4 {
-    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  to {
+    clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
   }
-  /* Visually-hidden but tappable area extender — helps small icons hit 44px target */
-  .tap-44 {
-    position: relative;
+}
+
+/* First-load cloud reveal (components/ui/IntroCurtain.tsx). CSS only. */
+.intro-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  overflow: hidden;
+  pointer-events: none;
+  animation: intro-hide 0s linear 1s forwards;
+}
+.intro-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(100svh + 80px);
+  animation: intro-drop 0.38s cubic-bezier(0.64, 0, 0.78, 0) var(--delay) forwards;
+}
+.intro-copy {
+  animation: intro-fade 0.12s ease 0.26s forwards;
+}
+@keyframes intro-drop {
+  to {
+    transform: translateY(calc(100svh + 120px));
   }
-  .tap-44::after {
-    content: "";
-    position: absolute;
-    inset: 50% 50% 50% 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
+}
+@keyframes intro-fade {
+  to {
+    opacity: 0;
   }
+}
+@keyframes intro-hide {
+  to {
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-curtain {
+    display: none;
+  }
+}
+
+/* Page-change cloud curtain (components/ui/NavCurtain.tsx). Bands rise
+   front-first to their own heights, then fall back-first. */
+.cloud-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+}
+.cloud-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100svh + 80px);
+  transform: translateY(calc(100svh + 24px));
+  will-change: transform;
+}
+.cloud-curtain[data-phase="up"] .cloud-band {
+  transform: translateY(var(--rest));
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1) var(--rise-delay);
+}
+.cloud-curtain[data-phase="fall"] .cloud-band {
+  transform: translateY(calc(100svh + 24px));
+  transition: transform 0.38s cubic-bezier(0.64, 0, 0.78, 0) var(--fall-delay);
+}
+.cloud-copy {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.cloud-curtain[data-phase="up"] .cloud-copy {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.25s ease 0.36s,
+    transform 0.25s var(--ease-out) 0.36s;
+}
+.cloud-curtain[data-phase="fall"] .cloud-copy {
+  opacity: 0;
+  transition: opacity 0.1s ease;
 }

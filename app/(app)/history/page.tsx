@@ -1,77 +1,39 @@
-"use client";
+import { HistoryList } from "@/components/app/HistoryList";
+import { ScoreTrend } from "@/components/app/ScoreTrend";
+import { listPapers } from "@/lib/server/papers";
+import { requireUser } from "@/lib/server/session";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { RecentPapers } from "@/components/dashboard/RecentPapers";
-import { SkeletonCard } from "@/components/shared/SkeletonCard";
-import { ErrorBanner } from "@/components/shared/ErrorBanner";
-import { MotionPage, MotionItem } from "@/components/shared/Motion";
-import type { PaperSummary } from "@/lib/types";
+export const metadata = { title: "History" };
+export const dynamic = "force-dynamic";
 
-export default function HistoryPage() {
-  const [papers, setPapers] = useState<PaperSummary[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    setError(null);
-    try {
-      const res = await fetch("/api/papers?limit=50");
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || "Failed to load");
-      setPapers(j.papers ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
-    }
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
+export default async function HistoryPage() {
+  const user = await requireUser("/history");
+  const [initial, completed] = await Promise.all([
+    listPapers(user, { limit: 20 }),
+    listPapers(user, { limit: 20, status: ["completed"] }),
+  ]);
+  const trend = completed.papers
+    .filter((p) => p.totalQuestions > 0)
+    .map((p) => ({
+      pct: Math.round(((p.score ?? 0) / p.totalQuestions) * 100),
+      label: `${p.level} · ${new Date(p.completedAt ?? p.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`,
+    }))
+    .reverse();
 
   return (
-    <MotionPage className="space-y-6 sm:space-y-8">
-      <MotionItem>
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-brand-400">
-              History
-            </p>
-            <h1 className="mt-1 break-words font-display text-3xl leading-[1.05] tracking-tighter2 sm:text-5xl md:text-6xl">
-              Every <span className="text-gradient">paper</span>, in one place.
-            </h1>
-          </div>
-          <Link
-            href="/configure"
-            className="btn btn-primary self-start sm:self-auto"
-          >
-            + New paper
-          </Link>
-        </header>
-      </MotionItem>
-
-      <MotionItem>
-        {error ? (
-          <ErrorBanner message={error} onRetry={load} />
-        ) : !papers ? (
-          <div className="space-y-2">
-            <SkeletonCard className="h-16" />
-            <SkeletonCard className="h-16" />
-            <SkeletonCard className="h-16" />
-            <SkeletonCard className="h-16" />
-          </div>
-        ) : papers.length === 0 ? (
-          <div className="card rounded-2xl p-10 text-center">
-            <p className="text-white/60">
-              You haven&apos;t taken a paper yet. Generate your first one and you&apos;ll see it here.
-            </p>
-            <Link href="/configure" className="btn btn-primary mt-4">
-              Start your first paper →
-            </Link>
-          </div>
-        ) : (
-          <RecentPapers papers={papers} />
-        )}
-      </MotionItem>
-    </MotionPage>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <header>
+        <p className="eyebrow">History</p>
+        <h1 className="mt-1 font-serif text-[clamp(2.4rem,7vw,3.6rem)] font-normal leading-[1] tracking-[-0.02em]">
+          Every paper, <em className="text-accent-ink">in order</em>.
+        </h1>
+      </header>
+      <ScoreTrend points={trend} />
+      {initial.papers.length ? (
+        <HistoryList initial={initial} />
+      ) : (
+        <p className="panel p-8 text-center text-ink/60">No papers yet. Your first one will show up here.</p>
+      )}
+    </div>
   );
 }

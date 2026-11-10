@@ -1,44 +1,37 @@
-import { NextResponse, type NextRequest } from "next/server";
+import NextAuth from "next-auth";
+import { NextResponse } from "next/server";
+import { authConfig, isProtectedPath } from "@/lib/auth/config";
 
-const PROTECTED_PREFIXES = [
-  "/dashboard",
-  "/configure",
-  "/test",
-  "/results",
-  "/history",
-  "/mistakes",
-];
+const { auth } = NextAuth(authConfig);
 
-function isProtected(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
-}
+// Verifies the session JWT at the edge (not just that a cookie exists).
+// Pages and API routes still check the user against the database.
+export default auth((req) => {
+  const { pathname, search } = req.nextUrl;
+  const signedIn = !!req.auth?.user;
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (!isProtected(pathname)) return NextResponse.next();
-
-  // NextAuth v5 stores the session token in this cookie.
-  const token =
-    req.cookies.get("authjs.session-token")?.value ||
-    req.cookies.get("__Secure-authjs.session-token")?.value;
-
-  if (!token) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (!signedIn && isProtectedPath(pathname)) {
+    const url = new URL("/login", req.url);
+    url.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(url);
+  }
+  if (signedIn && (pathname === "/" || pathname === "/login" || pathname === "/register")) {
+    return NextResponse.redirect(new URL("/today", req.url));
   }
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/configure/:path*",
+    "/",
+    "/login",
+    "/register",
+    "/today/:path*",
+    "/new/:path*",
     "/test/:path*",
     "/results/:path*",
+    "/review/:path*",
     "/history/:path*",
-    "/mistakes/:path*",
+    "/settings/:path*",
   ],
 };
